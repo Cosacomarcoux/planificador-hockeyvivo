@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Planificador Semanal – Hockey Vivo</title>
+<style>
+  :root {
+    --verde: #1a7a4a;
+    --verde-claro: #e8f5ee;
+    --verde-borde: #b2d8c0;
+    --negro: #1a1a1a;
+    --gris: #6b7280;
+    --gris-claro: #f4f6f4;
+    --blanco: #ffffff;
+    --radio: 10px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--gris-claro);
+    color: var(--negro);
+    min-height: 100vh;
+  }
+  header {
+    background: var(--verde);
+    color: white;
+    padding: 1rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  header h1 { font-size: 1.1rem; font-weight: 600; }
+  header span { font-size: 0.8rem; opacity: 0.75; }
+  .container { max-width: 780px; margin: 0 auto; padding: 1.5rem 1rem; }
+
+  /* Chat */
+  #chat-box {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-bottom: 1rem;
+  }
+  .msg { display: flex; gap: 10px; align-items: flex-start; }
+  .msg.user { flex-direction: row-reverse; }
+  .avatar {
+    width: 34px; height: 34px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 600; flex-shrink: 0;
+  }
+  .av-ai { background: var(--verde); color: white; }
+  .av-u { background: var(--negro); color: white; }
+  .bubble {
+    max-width: 82%;
+    padding: 11px 15px;
+    border-radius: var(--radio);
+    font-size: 14px;
+    line-height: 1.65;
+  }
+  .bubble.ai {
+    background: var(--blanco);
+    border: 1px solid var(--verde-borde);
+    color: var(--negro);
+  }
+  .bubble.user {
+    background: var(--verde);
+    color: white;
+  }
+
+  /* Opciones */
+  .opts { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 10px; }
+  .opt-btn {
+    padding: 7px 13px;
+    border-radius: 20px;
+    font-size: 13px;
+    cursor: pointer;
+    border: 1px solid var(--verde-borde);
+    background: var(--verde-claro);
+    color: var(--verde);
+    font-weight: 500;
+    transition: background 0.15s;
+  }
+  .opt-btn:hover { background: var(--verde-borde); }
+  .opt-btn:disabled { opacity: 0.4; cursor: default; }
+
+  /* Input */
+  #input-area {
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
+    background: var(--blanco);
+    border: 1px solid var(--verde-borde);
+    border-radius: var(--radio);
+    padding: 8px 10px;
+  }
+  #user-input {
+    flex: 1;
+    resize: none;
+    border: none;
+    outline: none;
+    font-size: 14px;
+    font-family: inherit;
+    background: transparent;
+    color: var(--negro);
+    min-height: 24px;
+    max-height: 100px;
+    line-height: 1.5;
+  }
+  #send-btn {
+    background: var(--verde);
+    color: white;
+    border: none;
+    border-radius: 7px;
+    padding: 7px 14px;
+    font-size: 14px;
+    cursor: pointer;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  #send-btn:hover { background: #155e39; }
+
+  /* Typing */
+  .typing { display: flex; gap: 5px; align-items: center; padding: 4px 0; }
+  .dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--verde-borde);
+    animation: blink 1.2s infinite;
+  }
+  .dot:nth-child(2) { animation-delay: .2s; }
+  .dot:nth-child(3) { animation-delay: .4s; }
+  @keyframes blink { 0%,80%,100%{opacity:.2} 40%{opacity:1} }
+
+  /* Tabla del plan */
+  .plan-wrap { overflow-x: auto; margin-top: 10px; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 560px; }
+  th {
+    background: var(--verde);
+    color: white;
+    padding: 7px 9px;
+    text-align: left;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  td {
+    padding: 6px 9px;
+    border: 1px solid #dde8e2;
+    vertical-align: top;
+    line-height: 1.45;
+  }
+  tr:nth-child(even) td { background: var(--verde-claro); }
+  td:first-child { font-weight: 600; color: var(--verde); white-space: nowrap; }
+
+  /* Botones acción */
+  .action-btns { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  .action-btn {
+    padding: 8px 14px;
+    border-radius: var(--radio);
+    font-size: 13px;
+    cursor: pointer;
+    font-weight: 500;
+    border: 1px solid var(--verde-borde);
+    background: var(--verde-claro);
+    color: var(--verde);
+  }
+  .action-btn:hover { background: var(--verde-borde); }
+  .action-btn.primary { background: var(--verde); color: white; border-color: var(--verde); }
+  .action-btn.primary:hover { background: #155e39; }
+
+  /* Reset */
+  #reset-btn {
+    display: block;
+    margin: 1.5rem auto 0;
+    background: none;
+    border: 1px solid #ccc;
+    color: var(--gris);
+    border-radius: 20px;
+    padding: 6px 16px;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  #reset-btn:hover { border-color: var(--verde); color: var(--verde); }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>🏑 Planificador Semanal</h1>
+    <span>Hockey Vivo – Santiago del Estero</span>
+  </div>
+</header>
+
+<div class="container">
+  <div id="chat-box"></div>
+  <div id="input-area">
+    <textarea id="user-input" placeholder="Escribí tu respuesta..." rows="1"></textarea>
+    <button id="send-btn" onclick="sendMessage()">Enviar ↗</button>
+  </div>
+  <button id="reset-btn" onclick="resetChat()">↺ Nueva planificación</button>
+</div>
+
+<script>
+const EJERCICIOS = {
+  Core: [
+    "Plancha con arrastre de PR","Pallof press","Estocados cortos con MB pesado",
+    "Abs Rodillas al pecho y extiendo","Ganchos en Carpa con MB pesada",
+    "Buen dia apoyados en la pared con MB","Abs Pies en cajón toco cajón",
+    "Saltos Tijera","Vela","Abs con MB arriba","Espinales con banda elástica",
+    "Oblicuos con MB","Plancha Crunch","Sit-ups con disco","Halo en carpa",
+    "½ Burpee","Pallof Split","Espinales con ¼ de giro","Swing Z en carpa",
+    "Rotación de core con TRX","Buen día lateral","Arcoíris",
+    "Plancha anti-rotación HV","Espinales Nadador","Gorilla con arrastre de PR",
+    "Oblicuos con Pelota medicinal","Abs codo Abductor","Pallof press en split",
+    "Plancha Copenhague","Escaladores"
+  ],
+  Upper: [
+    "Push press estricto","Remo con mangos estables","Fondos de Triceps",
+    "Curl Prono","Elevación de trapecios con PR","Vuelo frontal Con PR",
+    "Remo renegado con PR","Face Pull","Curl Biceps","Rodillo de Muñecas",
+    "Press Militar Estricto","Gorila Row","Patadas de Burro unilateral supina",
+    "Remo alto con TRX","Vuelos Laterales","Snatch (1 tiempo)","Curl Press",
+    "Face Pull Press","Hiper Extension de Triceps con PR","Remo con barra hexagonal",
+    "Pull Face","Press militar unilateral c/PR","Arcoíris","Scott con mango inestable",
+    "Elevación de hombros para trapecios con PR","Remo alto con mangos estables"
+  ],
+  Lower: [
+    "Estocados hacia atrás","Split squat","Peso Muerto Unilateral pies cruzados",
+    "Bajadas laterales de cajón rozando cono","Sentadilla Profunda en minibosu MB",
+    "Pasitos de ladrón","Desplantes abriendo talón","Puente de Gluteos unilateral",
+    "Sentadilla frontal con PR","Sentadillas POP salto adelante y atrás",
+    "Elevaciones de rodilla con BE en tobillos","Pistol sobre Cajón",
+    "Desplantes bajo Soga tocando cono","Saltos esquiadores al Step",
+    "Estocadas Chop","Puente de Isquios levanto pies","Swing búlgaro",
+    "Subida al cajón frontal 1 pierna con carga","Sentadilla pop con saltito lateral",
+    "Balanceo de PR en estocada","Lunges profundas sobre step",
+    "Empujes de gemelo a la pared","Desplantes laterales",
+    "Subida lateral al cajón","Equilibrio unipodal con perturbaciones",
+    "Sentadillas con MB","Saltos laterales con pies juntos"
+  ],
+  "Full Body": [
+    "Hollow Hold","Abs Sentado a 45º bicicleta","Press Militar unilateral c/PR",
+    "Sentadilla Profunda Con MB Pesada","Patadas de Burro","Curl Press",
+    "Saltos Esquiadores al Step","Remo alto con TRX","Escaladores",
+    "Subidas al cajón hacia atrás","Face Pull Press","Swing",
+    "Push Press empuje de piernas","Desplantes desde el step o cajón",
+    "Gorilla con abrazo de MB","Vela","Gorila Unilateral con balanceo",
+    "Z Press de Hombros","Vuelo frontal","Espinales con BE",
+    "Oblicuos con Pelota medicinal","Estocadas + Press","Avanzo a z3 enganche Pego",
+    "Burpee","Rodillo de Muñeca","Curl Prono","Arcoiris Z"
+  ]
+};
+
+const TECNICOS = [
+  "Amague en T","Amague en Y","Amague en ángulo + anticorredizo x2",
+  "Mini Z x6","Anticorredizo en slalom","Peine corto combinado con anticorredizo",
+  "Peine doble + anticorredizo mini Z al medio x4","Enganche en V x4",
+  "½ 8 anticorredizo + amague en T x4","X de dribling + anticorredizo slalom x3",
+  "Escalera de conducciones + anticorredizo","Eliminador y anticorredizo ½ 8",
+  "Conducción en L eliminador","Conducción en U mini Z","Conducción diagonal ½ 8",
+  "Z lineal + Z hacia adelante","Enganches laterales amplios x4",
+  "Slalom de corredizos arrastrando el palo","Pase y recepción dinámica",
+  "Dribling coordinativo a diferentes distancias","Anticorredizos en slalom x4",
+  "Peines clásicos combinados","½ X anticorredizo en z3","X de escape",
+  "Amague en T + eliminador / enganche en V x2",
+  "Peine corto con salida en diagonal x4","Jab corredizo acompañado en slalom",
+  "1/8 + amague en T x4","Z anticorredizo ½ 8 x2 z hacia adelante",
+  "Enganches en V x4 + ½ 8 anticorredizo peine corto"
+];
+
+const CABINAS = [
+  "Amague en T Push/ recibo en z2 Reves/ recibo en z4 Pego",
+  "Amague en Y Reves/ recibo en z2 Barrido/ Pego de primera",
+  "Mini Z Pego/ recibo en z2 Reves de primera/ Pego de primera",
+  "Conducción a z3 Push/ recibo en z2 Z adelante Reves/ Pego de primera",
+  "½ 8 Reves/ recibo en z2 anticorredizo Pego/ Barrido de primera",
+  "Peine corto Push/ recibo en z4 Reves de primera/ Pego de primera",
+  "Enganche en V Pego/ recibo en z2 Barrido/ recibo en z4 Reves",
+  "Eliminador en z3 Reves/ Reves de primera/ Pego de primera",
+  "Conducción en L Eliminador Reves/ Reves de primera/ recibo Reves",
+  "X de dribling Push/ recibo en z4 anticorredizo mini Z Reves/ Reves de primera",
+  "½ X Push/ recibo en z4 Pego/ Reves de primera",
+  "Amague en angulo en z2 Push/ Pego de primera/ Reves de primera",
+  "Mini Z x2 en z2 Reves/ recibo en z4 Pego",
+  "Peine doble anticorredizo mini Z Reves/ Pego de primera",
+  "Avanzo a z3 Pego a la carrera/ Elimino en z4 Push desde z3/ Reves de primera",
+  "Conducción en U a z3 mini Z Push/ recibo z4 Barrido/ desmarco z2 Reves de primera",
+  "½ X de dribling Reves/ recibo en z2 Push al target/ Barrido de primera en z4",
+  "Peine corto en z2 salgo diagonal Reves/ Pego de primera/ recibo en z4 Reves",
+  "Amague en T x2 en z1-2 Pego/ recibo en z4 Barrido/ toco cono en z3 Reves de primera",
+  "Conducción a z3 Escape Push/ recibo en z2 Z adelante Reves/ Pego de primera",
+  "Enfrentamientos","2 vs 2"
+];
+
+const GRUPOS_SEMANA = {
+  1: ["Core","Core","Upper","Lower","Full Body"],
+  2: ["Upper","Upper","Lower","Full Body","Core"],
+  3: ["Lower","Lower","Full Body","Core","Upper"],
+  4: ["Full Body","Full Body","Core","Upper","Lower"]
+};
+
+const DIAS = ["Lunes","Martes","Miércoles","Jueves","Viernes"];
+
+const PREGUNTAS = [
+  {
+    key: "semana",
+    texto: "¡Hola! Soy tu asistente de planificación de Hockey Vivo 🏑\n\n¿Qué semana del mesociclo vamos a planificar?",
+    opts: ["Semana 1","Semana 2","Semana 3","Semana 4"]
+  },
+  {
+    key: "fase",
+    texto: "¿En qué fase del mesociclo estamos?",
+    opts: ["Semana A – Fuerza","Semana B – Potencia","Semana C – Pliometría"]
+  },
+  {
+    key: "foco",
+    texto: "¿Hay algún foco especial esta semana o algo para tener en cuenta?",
+    opts: ["No, semana estándar","Más trabajo técnico","Más enfrentamientos","Semana de descarga","Foco en cabina"]
+  }
+];
+
+let estado = { step: 0, semana: null, fase: null, foco: null };
+let planActual = null;
+
+function rnd(arr, n) {
+  const s = [...arr]; const r = [];
+  for (let i = 0; i < Math.min(n, s.length); i++) {
+    const idx = Math.floor(Math.random() * s.length);
+    r.push(s.splice(idx, 1)[0]);
+  }
+  return r;
+}
+
+function generarPlan() {
+  const num = parseInt(estado.semana.replace("Semana ", ""));
+  const grupos = GRUPOS_SEMANA[num];
+  const foco = estado.foco;
+
+  const moods = ["Standard","Standard","EMOM","Intervalo","Dinámica media"];
+  if (foco === "Más enfrentamientos") moods[4] = "Enfrentamientos";
+  if (foco === "Semana de descarga") { moods[0] = "Dinámica corta"; moods[1] = "Dinámica corta"; moods[2] = "Dinámica corta"; }
+  if (foco === "Más trabajo técnico") { moods[2] = "Técnica"; moods[3] = "Técnica"; }
+  if (foco === "Foco en cabina") { moods[3] = "Técnica"; moods[4] = "EMOM"; }
+
+  const filas = {
+    "Grupo": grupos,
+    "Mood": moods,
+    "Físico 1": [], "Físico 2": [], "Físico 3": [], "Físico 4": [],
+    "Técnico 1": [], "Técnico 2": [],
+    "Cabina 1": [], "Cabina 2": []
+  };
+
+  grupos.forEach(g => {
+    const pool = EJERCICIOS[g] || EJERCICIOS["Full Body"];
+    const p = rnd(pool, 4);
+    filas["Físico 1"].push(p[0] || "");
+    filas["Físico 2"].push(p[1] || "");
+    filas["Físico 3"].push(p[2] || "");
+    filas["Físico 4"].push(p[3] || "");
+  });
+
+  const tec = rnd(TECNICOS, 10);
+  const cab = rnd(CABINAS, 10);
+  const mostrarTec2 = foco === "Más trabajo técnico";
+  for (let i = 0; i < 5; i++) {
+    filas["Técnico 1"].push(tec[i] || "");
+    filas["Técnico 2"].push(mostrarTec2 ? (tec[i + 5] || "") : "");
+    filas["Cabina 1"].push(cab[i] || "");
+    filas["Cabina 2"].push(cab[i + 5] || "");
+  }
+
+  planActual = { filas, grupos, moods };
+  return filas;
+}
+
+function tablaHTML(filas) {
+  let h = `<div class="plan-wrap"><table><thead><tr><th>Día / Ejercicio</th>`;
+  DIAS.forEach(d => h += `<th>${d}</th>`);
+  h += `</tr></thead><tbody>`;
+  Object.entries(filas).forEach(([label, vals]) => {
+    h += `<tr><td>${label}</td>`;
+    vals.forEach(v => h += `<td>${v}</td>`);
+    h += `</tr>`;
+  });
+  h += `</tbody></table></div>`;
+  h += `<div class="action-btns">
+    <button class="action-btn primary" onclick="copiarTabla()">📋 Copiar tabla</button>
+    <button class="action-btn" onclick="copiarWhatsApp()">📲 Copiar para WhatsApp</button>
+  </div>`;
+  return h;
+}
+
+function copiarTabla() {
+  if (!planActual) return;
+  let txt = `${estado.semana} – ${estado.fase}\nFoco: ${estado.foco}\n\n`;
+  txt += ["Día / Ejercicio", ...DIAS].join("\t") + "\n";
+  Object.entries(planActual.filas).forEach(([label, vals]) => {
+    txt += [label, ...vals].join("\t") + "\n";
+  });
+  navigator.clipboard.writeText(txt).then(() => alert("¡Tabla copiada al portapapeles!"));
+}
+
+function copiarWhatsApp() {
+  if (!planActual) return;
+  let txt = `*🏑 ${estado.semana} – ${estado.fase}*\nFoco: ${estado.foco}\n\n`;
+  Object.entries(planActual.filas).forEach(([label, vals]) => {
+    txt += `*${label}:*\n`;
+    DIAS.forEach((d, i) => { if (vals[i]) txt += `  ${d}: ${vals[i]}\n`; });
+    txt += "\n";
+  });
+  navigator.clipboard.writeText(txt).then(() => alert("¡Texto copiado listo para WhatsApp!"));
+}
+
+// ---- Chat engine ----
+
+function addMsg(role, contenido, esHtml = false) {
+  const box = document.getElementById("chat-box");
+  const div = document.createElement("div");
+  div.className = `msg ${role}`;
+  const av = document.createElement("div");
+  av.className = `avatar av-${role}`;
+  av.textContent = role === "ai" ? "IA" : "Vos";
+  const bub = document.createElement("div");
+  bub.className = `bubble ${role}`;
+  if (esHtml) bub.innerHTML = contenido;
+  else bub.textContent = contenido;
+  div.appendChild(av);
+  div.appendChild(bub);
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+}
+
+function addAIMsg(texto, opts = [], esHtml = false) {
+  const box = document.getElementById("chat-box");
+  const div = document.createElement("div");
+  div.className = "msg ai";
+  const av = document.createElement("div");
+  av.className = "avatar av-ai";
+  av.textContent = "IA";
+  const bub = document.createElement("div");
+  bub.className = "bubble ai";
+  if (esHtml) bub.innerHTML = texto;
+  else {
+    texto.split("\n").forEach((line, i) => {
+      if (i > 0) bub.appendChild(document.createElement("br"));
+      bub.appendChild(document.createTextNode(line));
+    });
+  }
+  if (opts.length) {
+    const od = document.createElement("div");
+    od.className = "opts";
+    opts.forEach(o => {
+      const btn = document.createElement("button");
+      btn.className = "opt-btn";
+      btn.textContent = o;
+      btn.onclick = () => { deshabilitarOpts(od); handleOpt(o); };
+      od.appendChild(btn);
+    });
+    bub.appendChild(od);
+  }
+  div.appendChild(av);
+  div.appendChild(bub);
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+}
+
+function deshabilitarOpts(container) {
+  container.querySelectorAll(".opt-btn").forEach(b => b.disabled = true);
+}
+
+function showTyping() {
+  const box = document.getElementById("chat-box");
+  const div = document.createElement("div");
+  div.className = "msg ai"; div.id = "typing";
+  const av = document.createElement("div");
+  av.className = "avatar av-ai"; av.textContent = "IA";
+  const bub = document.createElement("div");
+  bub.className = "bubble ai";
+  bub.innerHTML = `<div class="typing"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>`;
+  div.appendChild(av); div.appendChild(bub);
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+}
+
+function removeTyping() {
+  const t = document.getElementById("typing");
+  if (t) t.remove();
+}
+
+function handleOpt(val) {
+  addMsg("user", val);
+  procesarRespuesta(val);
+}
+
+function sendMessage() {
+  const inp = document.getElementById("user-input");
+  const val = inp.value.trim();
+  if (!val) return;
+  inp.value = "";
+  addMsg("user", val);
+  procesarRespuesta(val);
+}
+
+function procesarRespuesta(val) {
+  const q = PREGUNTAS[estado.step];
+  if (q) estado[q.key] = val;
+  estado.step++;
+  showTyping();
+  setTimeout(() => {
+    removeTyping();
+    if (estado.step < PREGUNTAS.length) {
+      const next = PREGUNTAS[estado.step];
+      addAIMsg(next.texto, next.opts);
+    } else {
+      addAIMsg(`¡Perfecto! Generando el plan para ${estado.semana} – ${estado.fase}...`);
+      setTimeout(() => {
+        const filas = generarPlan();
+        const header = `<strong>${estado.semana} – ${estado.fase}</strong><br><small style="color:#6b7280">Foco: ${estado.foco}</small>`;
+        addAIMsg(header + tablaHTML(filas), [], true);
+        setTimeout(() => {
+          addAIMsg("¿Querés hacer algo más con este plan?", ["Generar otra semana","Cambiar fase","Cambiar foco"]);
+        }, 300);
+      }, 600);
+    }
+  }, 800);
+}
+
+function resetChat() {
+  document.getElementById("chat-box").innerHTML = "";
+  estado = { step: 0, semana: null, fase: null, foco: null };
+  planActual = null;
+  addAIMsg(PREGUNTAS[0].texto, PREGUNTAS[0].opts);
+}
+
+document.getElementById("user-input").addEventListener("keydown", e => {
+  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+});
+
+// Inicio
+addAIMsg(PREGUNTAS[0].texto, PREGUNTAS[0].opts);
+</script>
+</body>
+</html>
