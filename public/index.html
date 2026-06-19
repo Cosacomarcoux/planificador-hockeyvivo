@@ -9,6 +9,8 @@
   --verde: #1a7a4a;
   --verde-claro: #e8f5ee;
   --verde-borde: #b2d8c0;
+  --verde-auto: #155e39;
+  --verde-auto-label: #0f4a2c;
   --negro: #1a1a1a;
   --gris: #6b7280;
   --gris-claro: #f4f6f4;
@@ -17,20 +19,24 @@
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--gris-claro); color: var(--negro); min-height: 100vh; }
+
+/* Header */
 header { background: var(--verde); color: white; padding: 1rem 1.5rem; display: flex; align-items: center; justify-content: space-between; }
 header h1 { font-size: 1.1rem; font-weight: 600; }
 header span { font-size: 0.8rem; opacity: 0.75; }
 .header-right { display: flex; gap: 8px; align-items: center; }
 .hist-btn { background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.3); border-radius: 7px; padding: 6px 12px; font-size: 13px; cursor: pointer; }
 .hist-btn:hover { background: rgba(255,255,255,0.25); }
-.container { max-width: 820px; margin: 0 auto; padding: 1.5rem 1rem; }
+
+/* Container y chat */
+.container { max-width: 860px; margin: 0 auto; padding: 1.5rem 1rem; }
 #chat-box { display: flex; flex-direction: column; gap: 14px; margin-bottom: 1rem; }
 .msg { display: flex; gap: 10px; align-items: flex-start; }
 .msg.user { flex-direction: row-reverse; }
 .avatar { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; flex-shrink: 0; }
 .av-ai { background: var(--verde); color: white; }
 .av-u { background: var(--negro); color: white; }
-.bubble { max-width: 85%; padding: 11px 15px; border-radius: var(--radio); font-size: 14px; line-height: 1.65; }
+.bubble { max-width: 88%; padding: 11px 15px; border-radius: var(--radio); font-size: 14px; line-height: 1.65; }
 .bubble.ai { background: var(--blanco); border: 1px solid var(--verde-borde); color: var(--negro); }
 .bubble.user { background: var(--verde); color: white; }
 .opts { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 10px; }
@@ -51,21 +57,29 @@ header span { font-size: 0.8rem; opacity: 0.75; }
 
 /* Tabla */
 .plan-outer { overflow-x: auto; margin-top: 10px; }
-table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 580px; }
+table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 620px; }
 .col-header { background: var(--verde); color: white; padding: 7px 9px; text-align: center; font-weight: 500; white-space: nowrap; }
 .col-header .dia-label { display: block; font-size: 13px; margin-bottom: 4px; }
 .col-header .copy-dia-btn { background: rgba(255,255,255,0.18); color: white; border: 1px solid rgba(255,255,255,0.35); border-radius: 5px; padding: 3px 8px; font-size: 11px; cursor: pointer; white-space: nowrap; }
 .col-header .copy-dia-btn:hover { background: rgba(255,255,255,0.3); }
-th.row-header { background: var(--verde); color: white; padding: 7px 9px; text-align: left; font-weight: 500; white-space: nowrap; font-size: 12px; }
+th.row-header { background: var(--verde); color: white; padding: 7px 9px; text-align: left; font-weight: 500; white-space: nowrap; font-size: 12px; min-width: 80px; }
 td { padding: 6px 9px; border: 1px solid #dde8e2; vertical-align: top; line-height: 1.45; font-size: 12px; }
 tr:nth-child(even) td { background: var(--verde-claro); }
-td:first-child { font-weight: 600; color: var(--verde); white-space: nowrap; background: #f0faf5 !important; }
-td.editable { cursor: pointer; }
-td.editable:hover { background: #d4f0e2 !important; outline: 1px dashed var(--verde); }
+td:first-child { font-weight: 600; white-space: nowrap; }
+
+/* Filas automáticas no editables */
+tr.fila-auto td { background: var(--verde-auto) !important; color: white !important; font-weight: 600; }
+tr.fila-auto td:first-child { background: var(--verde-auto-label) !important; color: #a8d5b9 !important; }
+
+/* Filas editables */
+td.editable { cursor: pointer; color: var(--negro); }
+td.editable:first-child { color: var(--verde); background: #f0faf5 !important; }
+tr:nth-child(even) td.editable:first-child { background: #e0f5eb !important; }
+td.editable:not(:first-child):hover { background: #d4f0e2 !important; outline: 1px dashed var(--verde); }
 td.editing { padding: 0 !important; }
 td.editing input { width: 100%; border: none; outline: 2px solid var(--verde); padding: 6px 9px; font-size: 12px; font-family: inherit; background: #fffbe6; border-radius: 0; }
 
-/* Acciones del plan */
+/* Botones de acción */
 .action-btns { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
 .action-btn { padding: 8px 14px; border-radius: var(--radio); font-size: 13px; cursor: pointer; font-weight: 500; border: 1px solid var(--verde-borde); background: var(--verde-claro); color: var(--verde); }
 .action-btn:hover { background: var(--verde-borde); }
@@ -75,7 +89,7 @@ td.editing input { width: 100%; border: none; outline: 2px solid var(--verde); p
 /* Modal historial */
 .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 100; align-items: center; justify-content: center; }
 .modal-overlay.open { display: flex; }
-.modal { background: var(--blanco); border-radius: var(--radio); padding: 1.5rem; max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto; }
+.modal { background: var(--blanco); border-radius: var(--radio); padding: 1.5rem; max-width: 520px; width: 90%; max-height: 80vh; overflow-y: auto; }
 .modal h2 { font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: var(--verde); }
 .modal-close { float: right; background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--gris); margin-top: -4px; }
 .hist-item { border: 1px solid var(--verde-borde); border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
@@ -88,7 +102,7 @@ td.editing input { width: 100%; border: none; outline: 2px solid var(--verde); p
 .empty-hist { color: var(--gris); font-size: 13px; text-align: center; padding: 2rem 0; }
 
 /* Toast */
-.toast { position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%); background: var(--negro); color: white; padding: 10px 20px; border-radius: 20px; font-size: 13px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 200; }
+.toast { position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%); background: var(--negro); color: white; padding: 10px 20px; border-radius: 20px; font-size: 13px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 200; white-space: nowrap; }
 .toast.show { opacity: 1; }
 </style>
 </head>
@@ -113,7 +127,6 @@ td.editing input { width: 100%; border: none; outline: 2px solid var(--verde); p
   <button id="reset-btn" onclick="resetChat()">↺ Nueva planificación</button>
 </div>
 
-<!-- Modal historial -->
 <div class="modal-overlay" id="modal-hist">
   <div class="modal">
     <button class="modal-close" onclick="cerrarHistorial()">✕</button>
@@ -125,87 +138,112 @@ td.editing input { width: 100%; border: none; outline: 2px solid var(--verde); p
 <div class="toast" id="toast"></div>
 
 <script>
+// ─── BANCOS DE EJERCICIOS ────────────────────────────────────────────────────
 const EJERCICIOS = {
-  "Full Body": [
-    "Pasitos de Ladron","Patadas de burro","Oblicuos con Pelota medicinal","Sentadillas pop",
-    "Subida frontales al cajón","Subida lateral al cajón","Subidas al cajón hacia atrás",
-    "Caída del cajón","Salto pliometrico al frente","Puente de glúteos unilateral",
-    "Estocadas pop","Sentadillas con Medicine Ball","Plancha lateral","Saltos esquiador al Step",
-    "Bajadas laterales del cajón","Estocada inestable","Escaladores","Abdominales codo abductor",
-    "Sentadillas isométrica en pared","Vela","Remo de hombros con barra","Halo","Vuelo frontal",
-    "Remo alto con TRX","Sentadillas laterales profundas","Press militar","Sprint jump",
-    "Espinales manos tras orejas","Espinales con banda elástica","Espinales cuarto de giro con bastón",
-    "Plancha Crunch","Abs Rodilla Hombros","Abs subiendo medicine Ball","Hemos dorsales con TRX",
-    "Gorila con cruce de pesas rusas","Plancha Copenhague","Espinales arrastrando pesas rusas",
-    "Curl Press","Curl Prono","Empujes isométricos de gemelos","Scott con mango inestables",
-    "Scott prono","1/2 Burpee","Separación de pies sobre conos","Hiperextensión de tríceps",
-    "Push press","Gancho al pie","Pulsos frontales con BE","Face Pull Press","Rodillo de Muñeca",
-    "Sentadillas si sí con TRX","Copenhague en cajón","Esquive de Box por debajo de elástico con salto",
-    "Plancha de glúteos extendida","Buen día de rodillas con MB",
-    "Abs patadas de nadador","1/4 de giro con mango estable","aperturas laterales","Fondos de Tríceps",
-    "Sentadillas sumo","plancha lateral c piernas flexionadas","Caminata con PR","ABS Barquito",
-    "1/2 rotación de tronco con mango de fuerza","Gorilla Row","separación de pies con ladrillo entre rodillas",
-    "Gorila Unilateral con balanceo","Rodillas arriba con elástico","Z Press de Hombros",
-    "Fondos de triceps","Rodillos de Muñeca","Lunges profundas sobre step","Snatch 1 tiempo",
-    "Vuelo lateral","Saltos con MB","Balanceo de PR en estocada","Sentadillas con PR arriba de la cabeza",
-    "Puente de isquios","Gorilla con abrazo de MB","Búlgaras","Estocados de Ladrón con PR",
-    "Pallof press","Rotación de core con TRX","Buen día lateral","Abs con MB con pies sobre el cajon",
-    "Clean con PR sentado","Swing en carpa","Arcoiris Z","Elevación de hombros para trapecios con PR",
-    "Estocadas + Press","Puente de glúteo unilateral sobre cajón","Desplantes laterales",
-    "Swing Z en carpa","Swing bulgaro","Equilibrio unipodal con perturbaciones",
-    "Peso muerto unilateral","Empujes de gemelo a la pared"
-  ],
-  Lower: [
-    "Pasitos de Ladron","Sentadillas pop","Subida frontales al cajón","Subida lateral al cajón",
-    "Subidas al cajón hacia atrás","Caída del cajón","Salto pliometrico al frente",
-    "Puente de glúteos unilateral","Estocadas pop","Saltos esquiador al Step",
-    "Bajadas laterales del cajón","Estocada inestable","Sprint jump","Sentadillas isométrica en pared",
-    "Sentadillas laterales profundas","Separación de pies sobre conos","Copenhague en cajón",
-    "Esquive de Box por debajo de elástico con salto","Plancha de glúteos extendida",
-    "Sentadillas sumo","plancha lateral c piernas flexionadas","separación de pies con ladrillo entre rodillas",
-    "Rodillas arriba con elástico","Lunges profundas sobre step","Saltos con MB",
-    "Balanceo de PR en estocada","Sentadillas con PR arriba de la cabeza","Puente de isquios",
-    "Búlgaras","Estocados de Ladrón con PR","Desplantes laterales","Swing bulgaro",
-    "Equilibrio unipodal con perturbaciones","Peso muerto unilateral","Empujes de gemelo a la pared",
-    "Estocadas Chop","Estocadas + Press","Puente de glúteo unilateral sobre cajón",
-    "Sentadillas si sí con TRX","Plancha Copenhague","Estocadas búlgaras","Sentadillas con Medicine Ball"
+  Core: [
+    "Oblicuos con Pelota medicinal","Plancha lateral","Abdominales codo abductor",
+    "Vela","Espinales manos tras orejas","Espinales con banda elástica",
+    "Espinales cuarto de giro con bastón","Plancha Crunch","Abs Rodilla Hombros",
+    "Abs subiendo medicine Ball","Espinales arrastrando pesas rusas","Plancha Copenhague",
+    "1/2 Burpee","Abs patadas de nadador","ABS Barquito",
+    "1/2 rotación de tronco con mango de fuerza","Rotación de core con TRX",
+    "Buen día lateral","Abs con MB con pies sobre el cajón","Swing en carpa",
+    "Arcoiris Z","Swing Z en carpa","Escaladores","Gancho al pie",
+    "1/4 de giro con mango estable","Pallof press","Gorilla Row",
+    "Gorila Unilateral con balanceo","plancha lateral c piernas flexionadas",
+    "Caminata con PR","Sit-ups con disco","Halo en carpa","Pallof Split",
+    "Espinales con cuarto de giro","Plancha anti-rotación HV","Oblicuos con MB",
+    "Separación de pies con ladrillo entre rodillas"
   ],
   Upper: [
-    "Remo de hombros con barra","Halo","Vuelo frontal","Remo alto con TRX","Press militar",
-    "Espinales manos tras orejas","Espinales con banda elástica","Espinales cuarto de giro con bastón",
-    "Hemos dorsales con TRX","Gorila con cruce de pesas rusas","Espinales arrastrando pesas rusas",
-    "Curl Press","Curl Prono","Scott con mango inestables","Scott prono","Hiperextensión de tríceps",
-    "Push press","Gancho al pie","Pulsos frontales con BE","Face Pull Press","Rodillo de Muñeca",
-    "Abs patadas de nadador","1/4 de giro con mango estable","aperturas laterales","Fondos de Tríceps",
-    "Fondos de triceps","Rodillos de Muñeca","Snatch 1 tiempo","Vuelo lateral","Gorilla Row",
-    "Gorila Unilateral con balanceo","Z Press de Hombros","Elevación de hombros para trapecios con PR",
-    "Gorilla con abrazo de MB","Pallof press","Rotación de core con TRX","Buen día lateral",
-    "Abs con MB con pies sobre el cajon","Clean con PR sentado","Arcoiris Z","Patadas de burro",
-    "Press Militar Estricto","Face Pull","Curl Biceps","Vuelos Laterales"
+    "Remo de hombros con barra","Halo","Vuelo frontal","Remo alto con TRX",
+    "Press militar","Hemos dorsales con TRX","Gorila con cruce de pesas rusas",
+    "Curl Press","Curl Prono","Scott con mango inestables","Scott prono",
+    "Hiperextensión de tríceps","Push press","Gancho al pie","Pulsos frontales con BE",
+    "Face Pull Press","Rodillo de Muñeca","Abs patadas de nadador",
+    "1/4 de giro con mango estable","aperturas laterales","Fondos de Tríceps",
+    "Fondos de triceps","Rodillos de Muñeca","Snatch 1 tiempo","Vuelo lateral",
+    "Gorilla Row","Gorila Unilateral con balanceo","Z Press de Hombros",
+    "Elevación de hombros para trapecios con PR","Gorilla con abrazo de MB",
+    "Pallof press","Rotación de core con TRX","Buen día lateral",
+    "Abs con MB con pies sobre el cajón","Clean con PR sentado","Arcoiris Z",
+    "Patadas de burro","Press Militar Estricto","Face Pull","Curl Biceps",
+    "Vuelos Laterales","Remo renegado con PR","Remo alto con mangos estables",
+    "Estocadas + Press"
   ],
-  Core: [
-    "Oblicuos con Pelota medicinal","Plancha lateral","Abdominales codo abductor","Vela",
-    "Espinales manos tras orejas","Espinales con banda elástica","Espinales cuarto de giro con bastón",
+  Lower: [
+    "Pasitos de Ladron","Sentadillas pop","Subida frontales al cajón",
+    "Subida lateral al cajón","Subidas al cajón hacia atrás","Caída del cajón",
+    "Salto pliometrico al frente","Puente de glúteos unilateral","Estocadas pop",
+    "Saltos esquiador al Step","Bajadas laterales del cajón","Estocada inestable",
+    "Sprint jump","Sentadillas isométrica en pared","Sentadillas laterales profundas",
+    "Separación de pies sobre conos","Copenhague en cajón",
+    "Esquive de Box por debajo de elástico con salto","Plancha de glúteos extendida",
+    "Sentadillas sumo","plancha lateral c piernas flexionadas",
+    "Separación de pies con ladrillo entre rodillas","Rodillas arriba con elástico",
+    "Lunges profundas sobre step","Saltos con MB","Balanceo de PR en estocada",
+    "Sentadillas con PR arriba de la cabeza","Puente de isquios","Búlgaras",
+    "Estocados de Ladrón con PR","Desplantes laterales","Swing bulgaro",
+    "Equilibrio unipodal con perturbaciones","Peso muerto unilateral",
+    "Empujes de gemelo a la pared","Estocadas Chop","Estocadas + Press",
+    "Puente de glúteo unilateral sobre cajón","Sentadillas si sí con TRX",
+    "Estocadas búlgaras","Sentadillas con Medicine Ball","Empujes isométricos de gemelos",
+    "Plancha Copenhague","Estocadas hacia atrás","Split squat",
+    "Peso Muerto Unilateral pies cruzados","Bajadas laterales de cajón rozando cono",
+    "Pistol sobre Cajón","Desplantes bajo Soga tocando cono"
+  ],
+  "Full Body": [
+    "Pasitos de Ladron","Patadas de burro","Oblicuos con Pelota medicinal",
+    "Sentadillas pop","Subida frontales al cajón","Subida lateral al cajón",
+    "Subidas al cajón hacia atrás","Caída del cajón","Salto pliometrico al frente",
+    "Puente de glúteos unilateral","Estocadas pop","Sentadillas con Medicine Ball",
+    "Plancha lateral","Saltos esquiador al Step","Bajadas laterales del cajón",
+    "Estocada inestable","Escaladores","Abdominales codo abductor",
+    "Sentadillas isométrica en pared","Vela","Remo de hombros con barra",
+    "Halo","Vuelo frontal","Remo alto con TRX","Sentadillas laterales profundas",
+    "Press militar","Sprint jump","Espinales manos tras orejas",
+    "Espinales con banda elástica","Espinales cuarto de giro con bastón",
     "Plancha Crunch","Abs Rodilla Hombros","Abs subiendo medicine Ball",
-    "Espinales arrastrando pesas rusas","Plancha Copenhague","1/2 Burpee",
-    "Abs patadas de nadador","ABS Barquito","1/2 rotación de tronco con mango de fuerza",
-    "separación de pies con ladrillo entre rodillas","Rotación de core con TRX","Buen día lateral",
-    "Abs con MB con pies sobre el cajon","Swing en carpa","Arcoiris Z","Swing Z en carpa",
-    "Escaladores","Gancho al pie","1/4 de giro con mango estable","Pallof press",
-    "Gorilla Row","Gorila Unilateral con balanceo","plancha lateral c piernas flexionadas",
-    "Caminata con PR","Sit-ups con disco","Halo en carpa",
-    "Pallof Split","Espinales con ¼ de giro","Plancha anti-rotación HV"
+    "Hemos dorsales con TRX","Gorila con cruce de pesas rusas","Plancha Copenhague",
+    "Espinales arrastrando pesas rusas","Curl Press","Curl Prono",
+    "Empujes isométricos de gemelos","Scott con mango inestables","Scott prono",
+    "1/2 Burpee","Separación de pies sobre conos","Hiperextensión de tríceps",
+    "Push press","Gancho al pie","Pulsos frontales con BE","Face Pull Press",
+    "Rodillo de Muñeca","Sentadillas si sí con TRX","Copenhague en cajón",
+    "Esquive de Box por debajo de elástico con salto","Plancha de glúteos extendida",
+    "Buen día de rodillas con MB","Abs patadas de nadador","1/4 de giro con mango estable",
+    "aperturas laterales","Fondos de Tríceps","Sentadillas sumo",
+    "plancha lateral c piernas flexionadas","Caminata con PR","ABS Barquito",
+    "1/2 rotación de tronco con mango de fuerza","Gorilla Row",
+    "Separación de pies con ladrillo entre rodillas","Gorila Unilateral con balanceo",
+    "Rodillas arriba con elástico","Z Press de Hombros","Fondos de triceps",
+    "Rodillos de Muñeca","Lunges profundas sobre step","Snatch 1 tiempo",
+    "Vuelo lateral","Saltos con MB","Balanceo de PR en estocada",
+    "Sentadillas con PR arriba de la cabeza","Puente de isquios",
+    "Gorilla con abrazo de MB","Búlgaras","Estocados de Ladrón con PR",
+    "Pallof press","Rotación de core con TRX","Buen día lateral",
+    "Abs con MB con pies sobre el cajón","Clean con PR sentado","Swing en carpa",
+    "Arcoiris Z","Elevación de hombros para trapecios con PR","Estocadas + Press",
+    "Puente de glúteo unilateral sobre cajón","Desplantes laterales",
+    "Swing Z en carpa","Swing bulgaro","Equilibrio unipodal con perturbaciones",
+    "Peso muerto unilateral","Empujes de gemelo a la pared","Hollow Hold",
+    "Gorila Unilateral con balanceo","Estocadas búlgaras"
   ]
 };
+
 const TECNICOS = [
-  "X de Dribling","mini Z","peine combinado con escape","X de conducción","mini Z ambos laterales",
-  "Amargues en T","Anticorredizos","Amague en Y","Peine Corto","1/2 8 de habilidades",
-  "Dribling Entro-salgo","Eliminador","escalera de quites","Rombo de conducciones",
-  "Amague en ángulo","Enganches en V","Conducción en L","Conducción en U","Conducción diagonal",
-  "Slalom de corredizos","Pase y recepción dinámica","Jab corredizo","8 de habilidades",
-  "Peine doble","Peine corto con salida en diagonal","Z lineal","Z hacia adelante",
-  "Amague en T + eliminador","Enganches laterales amplios"
+  "X de Dribling","mini Z","peine combinado con escape","X de conducción",
+  "mini Z ambos laterales","Amague en T","Anticorredizos","Amague en Y",
+  "Peine Corto","1/2 8 de habilidades","Dribling Entro-salgo","Eliminador",
+  "escalera de quites","Rombo de conducciones","Amague en ángulo",
+  "Enganches en V","Conducción en L","Conducción en U","Conducción diagonal",
+  "Slalom de corredizos","Pase y recepción dinámica","Jab corredizo",
+  "8 de habilidades","Peine doble","Peine corto con salida en diagonal",
+  "Z lineal","Z hacia adelante","Amague en T + eliminador","Enganches laterales amplios",
+  "1/8 + amague en T","Anticorredizos en slalom","Peines clásicos combinados",
+  "½ X anticorredizo en z3","X de escape"
 ];
+
 const CABINAS = [
   "conduccion a z3 amago en T a z2 Push/ recibo en z3 Reves/Pego de primera",
   "Conduccion en L amague en T en z3 barrido/ Pego de primera/ recibo en z2 Pego desde z4",
@@ -227,10 +265,11 @@ const CABINAS = [
   "Peine doble anticorredizo mini Z Reves/ Pego de primera",
   "Avanzo a z3 Pego a la carrera/ Elimino en z4 Push desde z3/ Reves de primera",
   "Conducción en U a z3 mini Z Push/ recibo z4 Barrido/ desmarco z2 Reves de primera",
+  "Media X MiniZ anticorredizo x2 + Media X",
   "Enfrentamientos",
-  "2 vs 2",
-  "Media X MiniZ anticorredizo x2 + Media X"
+  "2 vs 2"
 ];
+
 const ESPACIO1 = [
   "Rombo de conducciones + Amague en T",
   "Peine combinado + 1/2 8 / Escalera de quites",
@@ -241,134 +280,219 @@ const ESPACIO1 = [
   "Escalera de quites + Amague en Y",
   "Peine doble + Amague en T"
 ];
-const GRUPOS_SEMANA = { 1:["Core","Core","Upper","Lower","Full Body"], 2:["Upper","Upper","Lower","Full Body","Core"], 3:["Lower","Lower","Full Body","Core","Upper"], 4:["Full Body","Full Body","Core","Upper","Lower"] };
+
+// ─── ROTACIONES FIJAS ────────────────────────────────────────────────────────
+const GRUPOS_SEMANA = {
+  1: ["Core","Core","Upper","Lower","Full Body"],
+  2: ["Upper","Upper","Lower","Full Body","Core"],
+  3: ["Lower","Lower","Full Body","Core","Upper"],
+  4: ["Full Body","Full Body","Core","Upper","Lower"]
+};
+
+const TT_SEMANA = {
+  1: ["Dinámica corta","Dinámica corta","Técnica","Dinámica media","Enfrentamientos"],
+  2: ["Técnica","Técnica","Dinámica media","Enfrentamientos","Dinámica corta"],
+  3: ["Dinámica media","Dinámica media","Enfrentamientos","Técnica","Dinámica corta"],
+  4: ["Dinámica media","Dinámica media","Técnica","Dinámica corta","Enfrentamientos"]
+};
+
+// ─── CONSTANTES UI ───────────────────────────────────────────────────────────
 const DIAS = ["Lunes","Martes","Miércoles","Jueves","Viernes"];
-const LABELS_FILA = ["Grupo","Mood","Físico 1","Físico 2","Físico 3","Físico 4","Técnico 1","Técnico 2","Espacio 1","Cabina 1","Cabina 2"];
+const LABELS_FILA = ["Grupo","T.T.","Mood","Físico 1","Físico 2","Físico 3","Físico 4","Técnico 1","Técnico 2","Espacio 1","Cabina 1","Cabina 2"];
+const FILAS_AUTO = new Set(["Grupo","T.T.","Mood"]);
+
 const PREGUNTAS = [
-  { key:"semana", texto:"¡Hola! Soy tu asistente de planificación de Hockey Vivo 🏑\n\n¿Qué semana del mesociclo vamos a planificar?", opts:["Semana 1","Semana 2","Semana 3","Semana 4"] },
-  { key:"fase", texto:"¿En qué fase del mesociclo estamos?", opts:["Semana A – Fuerza","Semana B – Potencia","Semana C – Pliometría"] },
-  { key:"foco", texto:"¿Hay algún foco especial esta semana o algo para tener en cuenta?", opts:["No, semana estándar","Más trabajo técnico","Más enfrentamientos","Semana de descarga","Foco en cabina"] }
+  {
+    key: "semana",
+    texto: "¡Hola! Soy tu asistente de planificación de Hockey Vivo 🏑\n\n¿Qué semana del mesociclo vamos a planificar?",
+    opts: ["Semana 1","Semana 2","Semana 3","Semana 4"]
+  },
+  {
+    key: "fase",
+    texto: "¿En qué fase del mesociclo estamos?",
+    opts: ["Semana A – Fuerza","Semana B – Potencia","Semana C – Pliometría"]
+  },
+  {
+    key: "foco",
+    texto: "¿Hay algún foco especial esta semana o algo para tener en cuenta?",
+    opts: ["No, semana estándar","Más trabajo técnico","Semana de descarga","Foco en cabina"]
+  }
 ];
 
-let estado = { step:0, semana:null, fase:null, foco:null };
-let planActual = null; // { filas: {label: [5 valores]}, titulo, fecha }
+// ─── ESTADO ──────────────────────────────────────────────────────────────────
+let estado = { step: 0, semana: null, fase: null, foco: null };
+let planActual = null;
 
+// ─── UTILIDADES ──────────────────────────────────────────────────────────────
 function rnd(arr, n) {
-  const s=[...arr]; const r=[];
-  for(let i=0;i<Math.min(n,s.length);i++){const idx=Math.floor(Math.random()*s.length);r.push(s.splice(idx,1)[0]);}
+  const s = [...arr];
+  const r = [];
+  for (let i = 0; i < Math.min(n, s.length); i++) {
+    const idx = Math.floor(Math.random() * s.length);
+    r.push(s.splice(idx, 1)[0]);
+  }
   return r;
 }
 
+// ─── GENERACIÓN DEL PLAN ─────────────────────────────────────────────────────
 function generarFilas() {
-  const num = parseInt(estado.semana.replace("Semana ",""));
+  const num = parseInt(estado.semana.replace("Semana ", ""));
   const grupos = GRUPOS_SEMANA[num];
-  const foco = estado.foco;
-  const moods = ["Standard","Standard","EMOM","Intervalo","Dinámica media"];
-  if(foco==="Más enfrentamientos") moods[4]="Enfrentamientos";
-  if(foco==="Semana de descarga"){moods[0]="Dinámica corta";moods[1]="Dinámica corta";moods[2]="Dinámica corta";}
-  if(foco==="Más trabajo técnico"){moods[2]="Técnica";moods[3]="Técnica";}
-  if(foco==="Foco en cabina"){moods[3]="Técnica";moods[4]="EMOM";}
-  const f1=[],f2=[],f3=[],f4=[];
-  grupos.forEach(g=>{const pool=EJERCICIOS[g]||EJERCICIOS["Full Body"];const p=rnd(pool,4);f1.push(p[0]||"");f2.push(p[1]||"");f3.push(p[2]||"");f4.push(p[3]||"");});
-  const tec=rnd(TECNICOS,10); const cab=rnd(CABINAS,10); const esp=rnd(ESPACIO1,5);
-  const mostrarTec2=foco==="Más trabajo técnico";
-  const t1=[],t2=[],e1=[],c1=[],c2=[];
-  for(let i=0;i<5;i++){t1.push(tec[i]||"");t2.push(mostrarTec2?(tec[i+5]||""):"");e1.push(esp[i]||"");c1.push(cab[i]||"");c2.push(cab[i+5]||"");}
-  return {"Grupo":grupos,"Mood":moods,"Físico 1":f1,"Físico 2":f2,"Físico 3":f3,"Físico 4":f4,"Técnico 1":t1,"Técnico 2":t2,"Espacio 1":e1,"Cabina 1":c1,"Cabina 2":c2};
+  const tts    = TT_SEMANA[num];
+  const moods  = tts.map(tt => tt === "Enfrentamientos" ? "EMOM" : "INTERVALO");
+
+  const f1=[], f2=[], f3=[], f4=[];
+  const t1=[], t2=[], e1=[], c1=[], c2=[];
+
+  // Espacio 1: 5 únicos para la semana (8 disponibles)
+  const espSem = rnd(ESPACIO1, 5);
+
+  for (let i = 0; i < 5; i++) {
+    // Físicos: 4 únicos del grupo del día
+    const pool = EJERCICIOS[grupos[i]] || EJERCICIOS["Full Body"];
+    const fis = rnd(pool, 4);
+    f1.push(fis[0]||""); f2.push(fis[1]||""); f3.push(fis[2]||""); f4.push(fis[3]||"");
+
+    // Técnicos: 2 únicos por día
+    const tec = rnd(TECNICOS, 2);
+    t1.push(tec[0]||""); t2.push(tec[1]||"");
+
+    // Espacio 1
+    e1.push(espSem[i]||"");
+
+    // Cabinas: 2 únicas por día
+    const cab = rnd(CABINAS, 2);
+    c1.push(cab[0]||""); c2.push(cab[1]||"");
+  }
+
+  return {
+    "Grupo":    grupos,
+    "T.T.":     tts,
+    "Mood":     moods,
+    "Físico 1": f1,
+    "Físico 2": f2,
+    "Físico 3": f3,
+    "Físico 4": f4,
+    "Técnico 1":t1,
+    "Técnico 2":t2,
+    "Espacio 1":e1,
+    "Cabina 1": c1,
+    "Cabina 2": c2
+  };
 }
 
-// ---- Tabla editable ----
+// ─── TABLA ───────────────────────────────────────────────────────────────────
 function renderTabla(filas) {
-  let h = `<div class="plan-outer"><table><thead><tr><th class="row-header">Ejercicio / Día</th>`;
-  DIAS.forEach((d,i)=>{
-    h+=`<th class="col-header"><span class="dia-label">${d}</span><button class="copy-dia-btn" onclick="copiarDia(${i})">📲 Copiar día</button></th>`;
+  let h = `<div class="plan-outer"><table><thead><tr><th class="row-header">Fila / Día</th>`;
+  DIAS.forEach((d, i) => {
+    h += `<th class="col-header"><span class="dia-label">${d}</span><button class="copy-dia-btn" onclick="copiarDia(${i})">📲 Copiar día</button></th>`;
   });
-  h+=`</tr></thead><tbody>`;
-  LABELS_FILA.forEach(label=>{
-    const vals=filas[label]||["","","","",""];
-    h+=`<tr><td>${label}</td>`;
-    vals.forEach((v,di)=>{
-      h+=`<td class="editable" data-fila="${label}" data-dia="${di}" onclick="editarCelda(this)">${v}</td>`;
+  h += `</tr></thead><tbody>`;
+
+  LABELS_FILA.forEach(label => {
+    const vals = filas[label] || ["","","","",""];
+    const esAuto = FILAS_AUTO.has(label);
+    h += `<tr${esAuto ? ' class="fila-auto"' : ''}><td>${label}</td>`;
+    vals.forEach((v, di) => {
+      if (esAuto) {
+        h += `<td>${v}</td>`;
+      } else {
+        h += `<td class="editable" data-fila="${label}" data-dia="${di}" onclick="editarCelda(this)">${v}</td>`;
+      }
     });
-    h+=`</tr>`;
+    h += `</tr>`;
   });
-  h+=`</tbody></table></div>`;
+
+  h += `</tbody></table></div>`;
   return h;
 }
 
 function editarCelda(td) {
-  if(td.classList.contains("editing")) return;
+  if (td.classList.contains("editing")) return;
   const valorActual = td.textContent;
   td.classList.add("editing");
   td.classList.remove("editable");
   const inp = document.createElement("input");
   inp.type = "text";
   inp.value = valorActual;
-  inp.style.width = "100%";
   td.textContent = "";
   td.appendChild(inp);
   inp.focus();
   inp.select();
+
   const guardar = () => {
     const nuevo = inp.value.trim();
     td.classList.remove("editing");
     td.classList.add("editable");
     td.textContent = nuevo;
-    td.onclick = function(){editarCelda(this);};
-    // actualizar planActual
-    if(planActual){
+    td.onclick = function(){ editarCelda(this); };
+    if (planActual) {
       const fila = td.dataset.fila;
-      const dia = parseInt(td.dataset.dia);
-      if(planActual.filas[fila]) planActual.filas[fila][dia] = nuevo;
+      const dia  = parseInt(td.dataset.dia);
+      if (planActual.filas[fila]) planActual.filas[fila][dia] = nuevo;
     }
   };
+
   inp.addEventListener("blur", guardar);
-  inp.addEventListener("keydown", e=>{ if(e.key==="Enter") inp.blur(); if(e.key==="Escape"){inp.value=valorActual;inp.blur();} });
+  inp.addEventListener("keydown", e => {
+    if (e.key === "Enter")  { inp.blur(); }
+    if (e.key === "Escape") { inp.value = valorActual; inp.blur(); }
+  });
 }
 
-// ---- Copiar día individual ----
+// ─── COPIAR DÍA ──────────────────────────────────────────────────────────────
 function copiarDia(diaIdx) {
-  if(!planActual) return;
+  if (!planActual) return;
   const dia = DIAS[diaIdx];
-  let txt = `*🏑 Hockey Vivo – ${planActual.titulo}*\n`;
-  txt += `*${dia}*\n\n`;
-  LABELS_FILA.forEach(label=>{
-    const val = (planActual.filas[label]||[])[diaIdx];
-    if(val) txt += `• *${label}:* ${val}\n`;
+  let txt = `*🏑 Hockey Vivo – ${planActual.titulo}*\n*${dia}*\n\n`;
+  LABELS_FILA.forEach(label => {
+    const val = (planActual.filas[label] || [])[diaIdx];
+    if (val) txt += `• *${label}:* ${val}\n`;
   });
-  navigator.clipboard.writeText(txt).then(()=>toast(`✓ ${dia} copiado para WhatsApp`));
+  navigator.clipboard.writeText(txt).then(() => toast(`✓ ${dia} copiado para WhatsApp`));
 }
 
-// ---- Copiar tabla completa ----
+// ─── COPIAR TODO ─────────────────────────────────────────────────────────────
 function copiarTablaCompleta() {
-  if(!planActual) return;
+  if (!planActual) return;
   let txt = `*🏑 ${planActual.titulo}*\nFoco: ${estado.foco}\n\n`;
-  LABELS_FILA.forEach(label=>{
-    txt+=`*${label}:*\n`;
-    DIAS.forEach((d,i)=>{const v=(planActual.filas[label]||[])[i];if(v)txt+=`  ${d}: ${v}\n`;});
-    txt+="\n";
+  LABELS_FILA.forEach(label => {
+    txt += `*${label}:*\n`;
+    DIAS.forEach((d, i) => {
+      const v = (planActual.filas[label] || [])[i];
+      if (v) txt += `  ${d}: ${v}\n`;
+    });
+    txt += "\n";
   });
-  navigator.clipboard.writeText(txt).then(()=>toast("✓ Tabla copiada para WhatsApp"));
+  navigator.clipboard.writeText(txt).then(() => toast("✓ Tabla completa copiada para WhatsApp"));
 }
 
-// ---- Guardar plan ----
+// ─── GUARDAR PLAN ────────────────────────────────────────────────────────────
 function guardarPlan() {
-  if(!planActual) return;
-  const planes = JSON.parse(localStorage.getItem("hv_planes")||"[]");
+  if (!planActual) return;
+  const planes = JSON.parse(localStorage.getItem("hv_planes") || "[]");
   const id = Date.now();
-  planes.unshift({ id, titulo: planActual.titulo, fecha: planActual.fecha, semana: estado.semana, fase: estado.fase, foco: estado.foco, filas: planActual.filas });
+  planes.unshift({
+    id,
+    titulo: planActual.titulo,
+    fecha:  planActual.fecha,
+    semana: estado.semana,
+    fase:   estado.fase,
+    foco:   estado.foco,
+    filas:  planActual.filas
+  });
   localStorage.setItem("hv_planes", JSON.stringify(planes));
   toast("✓ Plan guardado");
 }
 
-// ---- Historial ----
+// ─── HISTORIAL ───────────────────────────────────────────────────────────────
 function abrirHistorial() {
-  const planes = JSON.parse(localStorage.getItem("hv_planes")||"[]");
-  const lista = document.getElementById("hist-lista");
-  if(!planes.length){
-    lista.innerHTML=`<div class="empty-hist">Todavía no guardaste ningún plan.<br>Generá uno y tocá "Guardar plan".</div>`;
+  const planes = JSON.parse(localStorage.getItem("hv_planes") || "[]");
+  const lista  = document.getElementById("hist-lista");
+  if (!planes.length) {
+    lista.innerHTML = `<div class="empty-hist">Todavía no guardaste ningún plan.<br>Generá uno y tocá "Guardar plan".</div>`;
   } else {
-    lista.innerHTML = planes.map(p=>`
+    lista.innerHTML = planes.map(p => `
       <div class="hist-item" id="hist-${p.id}">
         <div class="hist-item-info">
           <strong>${p.titulo}</strong>
@@ -376,21 +500,25 @@ function abrirHistorial() {
         </div>
         <div class="hist-item-btns">
           <button class="hist-load" onclick="cargarPlan(${p.id})">Cargar</button>
-          <button class="hist-del" onclick="borrarPlan(${p.id})">✕</button>
+          <button class="hist-del"  onclick="borrarPlan(${p.id})">✕</button>
         </div>
       </div>`).join("");
   }
   document.getElementById("modal-hist").classList.add("open");
 }
 
-function cerrarHistorial() { document.getElementById("modal-hist").classList.remove("open"); }
+function cerrarHistorial() {
+  document.getElementById("modal-hist").classList.remove("open");
+}
 
 function cargarPlan(id) {
-  const planes = JSON.parse(localStorage.getItem("hv_planes")||"[]");
-  const p = planes.find(x=>x.id===id);
-  if(!p) return;
+  const planes = JSON.parse(localStorage.getItem("hv_planes") || "[]");
+  const p = planes.find(x => x.id === id);
+  if (!p) return;
   cerrarHistorial();
-  estado.semana = p.semana; estado.fase = p.fase; estado.foco = p.foco;
+  estado.semana = p.semana;
+  estado.fase   = p.fase;
+  estado.foco   = p.foco;
   planActual = { filas: p.filas, titulo: p.titulo, fecha: p.fecha };
   const box = document.getElementById("chat-box");
   box.innerHTML = "";
@@ -399,14 +527,15 @@ function cargarPlan(id) {
 }
 
 function borrarPlan(id) {
-  let planes = JSON.parse(localStorage.getItem("hv_planes")||"[]");
-  planes = planes.filter(x=>x.id!==id);
+  let planes = JSON.parse(localStorage.getItem("hv_planes") || "[]");
+  planes = planes.filter(x => x.id !== id);
   localStorage.setItem("hv_planes", JSON.stringify(planes));
   document.getElementById(`hist-${id}`)?.remove();
   const lista = document.getElementById("hist-lista");
-  if(!lista.children.length) lista.innerHTML=`<div class="empty-hist">No hay planes guardados.</div>`;
+  if (!lista.children.length) lista.innerHTML = `<div class="empty-hist">No hay planes guardados.</div>`;
 }
 
+// ─── BOTONES DE ACCIÓN ───────────────────────────────────────────────────────
 function botonesAccion() {
   return `<div class="action-btns">
     <button class="action-btn primary" onclick="guardarPlan()">💾 Guardar plan</button>
@@ -414,93 +543,129 @@ function botonesAccion() {
   </div>`;
 }
 
-// ---- Toast ----
+// ─── TOAST ───────────────────────────────────────────────────────────────────
 function toast(msg) {
-  const t=document.getElementById("toast");
-  t.textContent=msg; t.classList.add("show");
-  setTimeout(()=>t.classList.remove("show"),2200);
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 2200);
 }
 
-// ---- Chat engine ----
+// ─── CHAT ENGINE ─────────────────────────────────────────────────────────────
 function addMsg(role, contenido, esHtml=false) {
-  const box=document.getElementById("chat-box");
-  const div=document.createElement("div"); div.className=`msg ${role}`;
-  const av=document.createElement("div"); av.className=`avatar av-${role}`; av.textContent=role==="ai"?"IA":"Vos";
-  const bub=document.createElement("div"); bub.className=`bubble ${role}`;
-  if(esHtml) bub.innerHTML=contenido;
-  else bub.textContent=contenido;
+  const box = document.getElementById("chat-box");
+  const div = document.createElement("div"); div.className = `msg ${role}`;
+  const av  = document.createElement("div"); av.className  = `avatar av-${role}`; av.textContent = role === "ai" ? "IA" : "Vos";
+  const bub = document.createElement("div"); bub.className = `bubble ${role}`;
+  if (esHtml) bub.innerHTML = contenido;
+  else bub.textContent = contenido;
   div.appendChild(av); div.appendChild(bub);
-  box.appendChild(div); box.scrollTop=box.scrollHeight;
+  box.appendChild(div); box.scrollTop = box.scrollHeight;
 }
 
 function addAIMsg(texto, opts=[], esHtml=false) {
-  const box=document.getElementById("chat-box");
-  const div=document.createElement("div"); div.className="msg ai";
-  const av=document.createElement("div"); av.className="avatar av-ai"; av.textContent="IA";
-  const bub=document.createElement("div"); bub.className="bubble ai";
-  if(esHtml) bub.innerHTML=texto;
-  else { texto.split("\n").forEach((line,i)=>{if(i>0)bub.appendChild(document.createElement("br"));bub.appendChild(document.createTextNode(line));}); }
-  if(opts.length){
-    const od=document.createElement("div"); od.className="opts";
-    opts.forEach(o=>{const btn=document.createElement("button");btn.className="opt-btn";btn.textContent=o;btn.onclick=()=>{deshabilitarOpts(od);handleOpt(o);};od.appendChild(btn);});
+  const box = document.getElementById("chat-box");
+  const div = document.createElement("div"); div.className = "msg ai";
+  const av  = document.createElement("div"); av.className  = "avatar av-ai"; av.textContent = "IA";
+  const bub = document.createElement("div"); bub.className = "bubble ai";
+
+  if (esHtml) {
+    bub.innerHTML = texto;
+  } else {
+    texto.split("\n").forEach((line, i) => {
+      if (i > 0) bub.appendChild(document.createElement("br"));
+      bub.appendChild(document.createTextNode(line));
+    });
+  }
+
+  if (opts.length) {
+    const od = document.createElement("div"); od.className = "opts";
+    opts.forEach(o => {
+      const btn = document.createElement("button");
+      btn.className = "opt-btn";
+      btn.textContent = o;
+      btn.onclick = () => { deshabilitarOpts(od); handleOpt(o); };
+      od.appendChild(btn);
+    });
     bub.appendChild(od);
   }
-  div.appendChild(av); div.appendChild(bub); box.appendChild(div); box.scrollTop=box.scrollHeight;
+
+  div.appendChild(av); div.appendChild(bub);
+  box.appendChild(div); box.scrollTop = box.scrollHeight;
 }
 
-function deshabilitarOpts(container){container.querySelectorAll(".opt-btn").forEach(b=>b.disabled=true);}
-
-function showTyping(){
-  const box=document.getElementById("chat-box");
-  const div=document.createElement("div");div.className="msg ai";div.id="typing";
-  const av=document.createElement("div");av.className="avatar av-ai";av.textContent="IA";
-  const bub=document.createElement("div");bub.className="bubble ai";
-  bub.innerHTML=`<div class="typing"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>`;
-  div.appendChild(av);div.appendChild(bub);box.appendChild(div);box.scrollTop=box.scrollHeight;
+function deshabilitarOpts(container) {
+  container.querySelectorAll(".opt-btn").forEach(b => b.disabled = true);
 }
 
-function removeTyping(){const t=document.getElementById("typing");if(t)t.remove();}
-
-function handleOpt(val){addMsg("user",val);procesarRespuesta(val);}
-
-function sendMessage(){
-  const inp=document.getElementById("user-input");
-  const val=inp.value.trim();if(!val)return;inp.value="";
-  addMsg("user",val);procesarRespuesta(val);
+function showTyping() {
+  const box = document.getElementById("chat-box");
+  const div = document.createElement("div"); div.className = "msg ai"; div.id = "typing";
+  const av  = document.createElement("div"); av.className  = "avatar av-ai"; av.textContent = "IA";
+  const bub = document.createElement("div"); bub.className = "bubble ai";
+  bub.innerHTML = `<div class="typing"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>`;
+  div.appendChild(av); div.appendChild(bub);
+  box.appendChild(div); box.scrollTop = box.scrollHeight;
 }
 
-function procesarRespuesta(val){
-  const q=PREGUNTAS[estado.step];if(q)estado[q.key]=val;
-  estado.step++;showTyping();
-  setTimeout(()=>{
+function removeTyping() {
+  const t = document.getElementById("typing");
+  if (t) t.remove();
+}
+
+function handleOpt(val) { addMsg("user", val); procesarRespuesta(val); }
+
+function sendMessage() {
+  const inp = document.getElementById("user-input");
+  const val = inp.value.trim();
+  if (!val) return;
+  inp.value = "";
+  addMsg("user", val);
+  procesarRespuesta(val);
+}
+
+function procesarRespuesta(val) {
+  const q = PREGUNTAS[estado.step];
+  if (q) estado[q.key] = val;
+  estado.step++;
+  showTyping();
+
+  setTimeout(() => {
     removeTyping();
-    if(estado.step<PREGUNTAS.length){
-      const next=PREGUNTAS[estado.step];addAIMsg(next.texto,next.opts);
+    if (estado.step < PREGUNTAS.length) {
+      const next = PREGUNTAS[estado.step];
+      addAIMsg(next.texto, next.opts);
     } else {
       addAIMsg(`¡Perfecto! Generando el plan para ${estado.semana} – ${estado.fase}...`);
-      setTimeout(()=>{
-        const filas=generarFilas();
-        const titulo=`${estado.semana} – ${estado.fase}`;
-        const fecha=new Date().toLocaleDateString("es-AR",{day:"2-digit",month:"2-digit",year:"numeric"});
-        planActual={filas,titulo,fecha};
-        const header=`<strong>${titulo}</strong><br><small style="color:#6b7280">Foco: ${estado.foco} · ${fecha}</small><br><small style="color:#9ca3af;font-size:11px">✏️ Tocá cualquier celda para editar</small>`;
-        addAIMsg(header+renderTabla(filas)+botonesAccion(),[],true);
-        setTimeout(()=>{addAIMsg("¿Querés algo más?",["Generar otra semana","Cambiar fase","Cambiar foco"]);},300);
-      },600);
+      setTimeout(() => {
+        const filas  = generarFilas();
+        const titulo = `${estado.semana} – ${estado.fase}`;
+        const fecha  = new Date().toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric" });
+        planActual   = { filas, titulo, fecha };
+        const header = `<strong>${titulo}</strong><br><small style="color:#6b7280">Foco: ${estado.foco} · ${fecha}</small><br><small style="color:#9ca3af;font-size:11px">✏️ Tocá cualquier celda (excepto las verdes) para editar</small>`;
+        addAIMsg(header + renderTabla(filas) + botonesAccion(), [], true);
+        setTimeout(() => { addAIMsg("¿Querés algo más?", ["Generar otra semana","Cambiar fase","Cambiar foco"]); }, 300);
+      }, 600);
     }
-  },800);
+  }, 800);
 }
 
-function resetChat(){
-  document.getElementById("chat-box").innerHTML="";
-  estado={step:0,semana:null,fase:null,foco:null};planActual=null;
-  addAIMsg(PREGUNTAS[0].texto,PREGUNTAS[0].opts);
+function resetChat() {
+  document.getElementById("chat-box").innerHTML = "";
+  estado = { step: 0, semana: null, fase: null, foco: null };
+  planActual = null;
+  addAIMsg(PREGUNTAS[0].texto, PREGUNTAS[0].opts);
 }
 
-document.getElementById("user-input").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendMessage();}});
-document.getElementById("modal-hist").addEventListener("click",e=>{if(e.target===document.getElementById("modal-hist"))cerrarHistorial();});
+// ─── INICIALIZACIÓN ──────────────────────────────────────────────────────────
+document.getElementById("user-input").addEventListener("keydown", e => {
+  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+});
+document.getElementById("modal-hist").addEventListener("click", e => {
+  if (e.target === document.getElementById("modal-hist")) cerrarHistorial();
+});
 
-addAIMsg(PREGUNTAS[0].texto,PREGUNTAS[0].opts);
+addAIMsg(PREGUNTAS[0].texto, PREGUNTAS[0].opts);
 </script>
 </body>
 </html>
