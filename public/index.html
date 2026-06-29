@@ -104,6 +104,32 @@ td.editing input { width: 100%; border: none; outline: 2px solid var(--verde); p
 /* Toast */
 .toast { position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%); background: var(--negro); color: white; padding: 10px 20px; border-radius: 20px; font-size: 13px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 200; white-space: nowrap; }
 .toast.show { opacity: 1; }
+
+/* Dropdown buscador */
+#ejercicio-dropdown { position: fixed; z-index: 500; background: var(--blanco); border: 2px solid var(--verde); border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.18); min-width: 220px; display: none; }
+.dropdown-header { display: flex; gap: 4px; padding: 8px 8px 4px; }
+#dropdown-search { flex: 1; border: 1px solid var(--verde-borde); border-radius: 6px; padding: 6px 8px; font-size: 13px; outline: none; font-family: inherit; }
+#dropdown-search:focus { border-color: var(--verde); }
+.dropdown-close-btn { background: none; border: none; cursor: pointer; font-size: 16px; color: var(--gris); line-height: 1; padding: 0 2px; }
+#dropdown-list { max-height: 220px; overflow-y: auto; padding: 0 8px 8px; }
+.dropdown-item { padding: 6px 8px; border-radius: 5px; font-size: 12px; cursor: pointer; line-height: 1.4; }
+.dropdown-item:hover { background: var(--verde-claro); color: var(--verde); }
+.dropdown-empty { color: var(--gris); font-size: 12px; padding: 6px 4px; }
+
+/* Modal banco de ejercicios */
+.banco-tabs { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 14px; }
+.banco-tab { padding: 5px 10px; border: 1px solid var(--verde-borde); border-radius: 6px; font-size: 12px; cursor: pointer; background: var(--verde-claro); color: var(--verde); font-weight: 500; }
+.banco-tab.active { background: var(--verde); color: white; border-color: var(--verde); }
+.banco-list { max-height: 300px; overflow-y: auto; margin-bottom: 4px; }
+.banco-item { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 5px 2px; border-bottom: 1px solid #f0f4f2; font-size: 12px; }
+.banco-item:last-child { border-bottom: none; }
+.banco-del-btn { background: none; border: none; cursor: pointer; font-size: 14px; flex-shrink: 0; opacity: 0.7; }
+.banco-del-btn:hover { opacity: 1; }
+.banco-add-row { display: flex; gap: 6px; margin-top: 12px; border-top: 1px solid var(--verde-borde); padding-top: 12px; }
+.banco-add-input { flex: 1; border: 1px solid var(--verde-borde); border-radius: 6px; padding: 7px 9px; font-size: 12px; outline: none; font-family: inherit; }
+.banco-add-input:focus { border-color: var(--verde); }
+.banco-add-btn { padding: 7px 14px; background: var(--verde); color: white; border: none; border-radius: 6px; font-size: 12px; cursor: pointer; font-weight: 500; white-space: nowrap; }
+.banco-add-btn:hover { background: #155e39; }
 </style>
 </head>
 <body>
@@ -114,6 +140,7 @@ td.editing input { width: 100%; border: none; outline: 2px solid var(--verde); p
     <span>Hockey Vivo – Santiago del Estero</span>
   </div>
   <div class="header-right">
+    <button class="hist-btn" onclick="abrirBanco()">⚙️ Banco</button>
     <button class="hist-btn" onclick="abrirHistorial()">📂 Planes guardados</button>
   </div>
 </header>
@@ -133,6 +160,23 @@ td.editing input { width: 100%; border: none; outline: 2px solid var(--verde); p
     <h2>📂 Planes guardados</h2>
     <div id="hist-lista"></div>
   </div>
+</div>
+
+<div class="modal-overlay" id="modal-banco">
+  <div class="modal" style="max-width:560px;">
+    <button class="modal-close" onclick="cerrarBanco()">✕</button>
+    <h2>⚙️ Banco de ejercicios</h2>
+    <div class="banco-tabs" id="banco-tabs"></div>
+    <div id="banco-contenido"></div>
+  </div>
+</div>
+
+<div id="ejercicio-dropdown">
+  <div class="dropdown-header">
+    <input type="text" id="dropdown-search" placeholder="Buscar ejercicio...">
+    <button class="dropdown-close-btn" onclick="cerrarDropdown()">✕</button>
+  </div>
+  <div id="dropdown-list"></div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -334,6 +378,31 @@ function rnd(arr, n) {
   return r;
 }
 
+// Retorna el banco efectivo: base + extras localStorage - eliminados localStorage
+function getBancoEfectivo(key) {
+  const eliminados = JSON.parse(localStorage.getItem("hv_banco_eliminados") || "[]");
+  const extra = JSON.parse(localStorage.getItem("hv_banco_extra") || "{}");
+  let base = [];
+  if (EJERCICIOS[key])      base = [...EJERCICIOS[key]];
+  else if (key === "Técnicos") base = [...TECNICOS];
+  else if (key === "Espacio 1") base = [...ESPACIO1];
+  else if (key === "Cabinas")  base = [...CABINAS];
+  const extras = extra[key] || [];
+  return [...base, ...extras].filter(e => !eliminados.includes(e));
+}
+
+// Retorna el banco correcto según la fila y el día
+function getBancoParaFila(label, diaIdx) {
+  if (label.startsWith("Físico")) {
+    const grupo = planActual?.filas?.["Grupo"]?.[diaIdx] || "Full Body";
+    return getBancoEfectivo(grupo);
+  }
+  if (label.startsWith("Técnico")) return getBancoEfectivo("Técnicos");
+  if (label === "Espacio 1")       return getBancoEfectivo("Espacio 1");
+  if (label.startsWith("Cabina"))  return getBancoEfectivo("Cabinas");
+  return [];
+}
+
 // ─── GENERACIÓN DEL PLAN ─────────────────────────────────────────────────────
 function generarFilas() {
   const num = parseInt(estado.semana.replace("Semana ", ""));
@@ -344,24 +413,23 @@ function generarFilas() {
   const f1=[], f2=[], f3=[], f4=[];
   const t1=[], t2=[], e1=[], c1=[], c2=[];
 
-  // Espacio 1: 5 únicos para la semana (8 disponibles)
-  const espSem = rnd(ESPACIO1, 5);
+  // Espacio 1: 5 únicos para la semana
+  const espSem = rnd(getBancoEfectivo("Espacio 1"), 5);
 
   for (let i = 0; i < 5; i++) {
     // Físicos: 4 únicos del grupo del día
-    const pool = EJERCICIOS[grupos[i]] || EJERCICIOS["Full Body"];
-    const fis = rnd(pool, 4);
+    const fis = rnd(getBancoEfectivo(grupos[i]), 4);
     f1.push(fis[0]||""); f2.push(fis[1]||""); f3.push(fis[2]||""); f4.push(fis[3]||"");
 
     // Técnicos: 2 únicos por día
-    const tec = rnd(TECNICOS, 2);
+    const tec = rnd(getBancoEfectivo("Técnicos"), 2);
     t1.push(tec[0]||""); t2.push(tec[1]||"");
 
     // Espacio 1
     e1.push(espSem[i]||"");
 
     // Cabinas: 2 únicas por día
-    const cab = rnd(CABINAS, 2);
+    const cab = rnd(getBancoEfectivo("Cabinas"), 2);
     c1.push(cab[0]||""); c2.push(cab[1]||"");
   }
 
@@ -407,37 +475,56 @@ function renderTabla(filas) {
   return h;
 }
 
+let _dropdownTd = null;
+
 function editarCelda(td) {
-  if (td.classList.contains("editing")) return;
-  const valorActual = td.textContent;
-  td.classList.add("editing");
-  td.classList.remove("editable");
-  const inp = document.createElement("input");
-  inp.type = "text";
-  inp.value = valorActual;
-  td.textContent = "";
-  td.appendChild(inp);
-  inp.focus();
-  inp.select();
+  const fila = td.dataset.fila;
+  const dia  = parseInt(td.dataset.dia);
+  const banco = getBancoParaFila(fila, dia);
 
-  const guardar = () => {
-    const nuevo = inp.value.trim();
-    td.classList.remove("editing");
-    td.classList.add("editable");
-    td.textContent = nuevo;
-    td.onclick = function(){ editarCelda(this); };
-    if (planActual) {
-      const fila = td.dataset.fila;
-      const dia  = parseInt(td.dataset.dia);
-      if (planActual.filas[fila]) planActual.filas[fila][dia] = nuevo;
-    }
-  };
+  _dropdownTd = td;
+  const panel  = document.getElementById("ejercicio-dropdown");
+  const search = document.getElementById("dropdown-search");
 
-  inp.addEventListener("blur", guardar);
-  inp.addEventListener("keydown", e => {
-    if (e.key === "Enter")  { inp.blur(); }
-    if (e.key === "Escape") { inp.value = valorActual; inp.blur(); }
-  });
+  // Posición debajo de la celda
+  const rect = td.getBoundingClientRect();
+  panel.style.top   = (rect.bottom + 4) + "px";
+  panel.style.left  = rect.left + "px";
+  panel.style.width = Math.max(240, rect.width) + "px";
+  panel.style.display = "block";
+
+  search.value = "";
+  _renderDropdownList(banco, "");
+  search.focus();
+
+  search.oninput = () => _renderDropdownList(banco, search.value);
+}
+
+function _renderDropdownList(banco, filtro) {
+  const lista = document.getElementById("dropdown-list");
+  const f = filtro.toLowerCase().trim();
+  const filtered = f ? banco.filter(e => e.toLowerCase().includes(f)) : banco;
+  if (!filtered.length) {
+    lista.innerHTML = `<div class="dropdown-empty">Sin resultados</div>`;
+    return;
+  }
+  lista.innerHTML = filtered.map(e =>
+    `<div class="dropdown-item" onclick="_seleccionarEjercicio(${JSON.stringify(e)})">${e}</div>`
+  ).join("");
+}
+
+function _seleccionarEjercicio(nombre) {
+  if (!_dropdownTd) return;
+  const fila = _dropdownTd.dataset.fila;
+  const dia  = parseInt(_dropdownTd.dataset.dia);
+  _dropdownTd.textContent = nombre;
+  if (planActual && planActual.filas[fila]) planActual.filas[fila][dia] = nombre;
+  cerrarDropdown();
+}
+
+function cerrarDropdown() {
+  document.getElementById("ejercicio-dropdown").style.display = "none";
+  _dropdownTd = null;
 }
 
 // ─── COPIAR DÍA ──────────────────────────────────────────────────────────────
@@ -657,12 +744,97 @@ function resetChat() {
   addAIMsg(PREGUNTAS[0].texto, PREGUNTAS[0].opts);
 }
 
+// ─── ADMIN BANCO DE EJERCICIOS ───────────────────────────────────────────────
+const BANCO_TABS = ["Core","Upper","Lower","Full Body","Técnicos","Espacio 1","Cabinas"];
+let _bancoTabActual = "Core";
+
+function abrirBanco() {
+  _bancoTabActual = "Core";
+  _renderBancoTabs();
+  _renderBancoContenido(_bancoTabActual);
+  document.getElementById("modal-banco").classList.add("open");
+}
+
+function cerrarBanco() {
+  document.getElementById("modal-banco").classList.remove("open");
+}
+
+function _renderBancoTabs() {
+  document.getElementById("banco-tabs").innerHTML = BANCO_TABS.map(t =>
+    `<button class="banco-tab${t === _bancoTabActual ? ' active' : ''}" onclick="_cambiarBancoTab(${JSON.stringify(t)})">${t}</button>`
+  ).join("");
+}
+
+function _cambiarBancoTab(key) {
+  _bancoTabActual = key;
+  _renderBancoTabs();
+  _renderBancoContenido(key);
+}
+
+function _renderBancoContenido(key) {
+  const banco = getBancoEfectivo(key);
+  let html = `<div class="banco-list">`;
+  if (!banco.length) {
+    html += `<div style="color:var(--gris);font-size:13px;padding:1rem 0;text-align:center;">No hay ejercicios en este banco.</div>`;
+  } else {
+    banco.forEach(e => {
+      html += `<div class="banco-item">
+        <span>${e}</span>
+        <button class="banco-del-btn" title="Eliminar" onclick="_eliminarEjercicio(${JSON.stringify(key)},${JSON.stringify(e)})">🗑️</button>
+      </div>`;
+    });
+  }
+  html += `</div>
+  <div class="banco-add-row">
+    <input class="banco-add-input" id="banco-add-input" type="text" placeholder="Nombre del ejercicio nuevo...">
+    <button class="banco-add-btn" onclick="_agregarEjercicio(${JSON.stringify(key)})">Agregar</button>
+  </div>`;
+  document.getElementById("banco-contenido").innerHTML = html;
+  const inp = document.getElementById("banco-add-input");
+  if (inp) inp.addEventListener("keydown", ev => { if (ev.key === "Enter") _agregarEjercicio(key); });
+}
+
+function _eliminarEjercicio(key, nombre) {
+  if (!confirm(`¿Eliminás este ejercicio?\n"${nombre}"`)) return;
+  // ¿Es del banco base o de extras?
+  let base = EJERCICIOS[key] || (key === "Técnicos" ? TECNICOS : key === "Espacio 1" ? ESPACIO1 : key === "Cabinas" ? CABINAS : []);
+  if (base.includes(nombre)) {
+    const eliminados = JSON.parse(localStorage.getItem("hv_banco_eliminados") || "[]");
+    if (!eliminados.includes(nombre)) { eliminados.push(nombre); localStorage.setItem("hv_banco_eliminados", JSON.stringify(eliminados)); }
+  } else {
+    const extra = JSON.parse(localStorage.getItem("hv_banco_extra") || "{}");
+    extra[key] = (extra[key] || []).filter(e => e !== nombre);
+    localStorage.setItem("hv_banco_extra", JSON.stringify(extra));
+  }
+  _renderBancoContenido(key);
+}
+
+function _agregarEjercicio(key) {
+  const inp = document.getElementById("banco-add-input");
+  const nombre = inp?.value.trim();
+  if (!nombre) return;
+  const extra = JSON.parse(localStorage.getItem("hv_banco_extra") || "{}");
+  if (!extra[key]) extra[key] = [];
+  if (!extra[key].includes(nombre)) { extra[key].push(nombre); localStorage.setItem("hv_banco_extra", JSON.stringify(extra)); }
+  inp.value = "";
+  _renderBancoContenido(key);
+  toast(`✓ "${nombre}" agregado a ${key}`);
+}
+
 // ─── INICIALIZACIÓN ──────────────────────────────────────────────────────────
 document.getElementById("user-input").addEventListener("keydown", e => {
   if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
 });
 document.getElementById("modal-hist").addEventListener("click", e => {
   if (e.target === document.getElementById("modal-hist")) cerrarHistorial();
+});
+document.getElementById("modal-banco").addEventListener("click", e => {
+  if (e.target === document.getElementById("modal-banco")) cerrarBanco();
+});
+document.addEventListener("click", e => {
+  const panel = document.getElementById("ejercicio-dropdown");
+  if (panel.style.display === "none") return;
+  if (!panel.contains(e.target) && e.target !== _dropdownTd && !_dropdownTd?.contains(e.target)) cerrarDropdown();
 });
 
 addAIMsg(PREGUNTAS[0].texto, PREGUNTAS[0].opts);
