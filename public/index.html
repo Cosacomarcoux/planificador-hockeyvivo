@@ -346,7 +346,7 @@ const TECNICOS = [
   "½ X anticorredizo en z3","X de escape"
 ];
 
-const CABINAS = [
+const CABINAS_1 = [
   "conduccion a z3 amago en T a z2 Push/ recibo en z3 Reves/Pego de primera",
   "Conduccion en L amague en T en z3 barrido/ Pego de primera/ recibo en z2 Pego desde z4",
   "Amague en Y barrido/ pego de primera/ pego de primera",
@@ -357,7 +357,10 @@ const CABINAS = [
   "Mini Z Pego/ recibo en z2 Reves de primera/ Pego de primera",
   "Conducción a z3 Push/ recibo en z2 Z adelante Reves/ Pego de primera",
   "½ 8 Reves/ recibo en z2 anticorredizo Pego/ Barrido de primera",
-  "Peine corto Push/ recibo en z4 Reves de primera/ Pego de primera",
+  "Peine corto Push/ recibo en z4 Reves de primera/ Pego de primera"
+];
+
+const CABINAS_2 = [
   "Enganche en V Pego/ recibo en z2 Barrido/ recibo en z4 Reves",
   "Eliminador en z3 Reves/ Reves de primera/ Pego de primera",
   "X de dribling Push/ recibo en z4 anticorredizo mini Z Reves/ Reves de primera",
@@ -447,7 +450,8 @@ function getBancoEfectivo(key) {
   if (EJERCICIOS[key])                             base = [...EJERCICIOS[key]];
   else if (key === "Técnicos")                     base = [...TECNICOS];
   else if (key === "Espacio 1")                    base = [...ESPACIO1];
-  else if (key === "Cabina 1" || key === "Cabina 2") base = [...CABINAS];
+  else if (key === "Cabina 1") base = [...CABINAS_1];
+  else if (key === "Cabina 2") base = [...CABINAS_2];
   const extras = extra[key] || [];
   return [...base, ...extras].filter(e => !eliminados.includes(e));
 }
@@ -911,7 +915,12 @@ function _renderBancoContenido(key) {
 }
 
 function _baseParaKey(key) {
-  return EJERCICIOS[key] || (key === "Técnicos" ? TECNICOS : key === "Espacio 1" ? ESPACIO1 : (key === "Cabina 1" || key === "Cabina 2") ? CABINAS : []);
+  if (EJERCICIOS[key])      return EJERCICIOS[key];
+  if (key === "Técnicos")   return TECNICOS;
+  if (key === "Espacio 1")  return ESPACIO1;
+  if (key === "Cabina 1")   return CABINAS_1;
+  if (key === "Cabina 2")   return CABINAS_2;
+  return [];
 }
 
 function _eliminarEjercicio(key, nombre) {
