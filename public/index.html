@@ -437,14 +437,17 @@ function rnd(arr, n) {
 }
 
 // Retorna el banco efectivo: base + extras localStorage - eliminados localStorage
+// hv_banco_eliminados es un objeto { key: [nombres] } (por banco)
 function getBancoEfectivo(key) {
-  const eliminados = JSON.parse(localStorage.getItem("hv_banco_eliminados") || "[]");
+  const eliminadosRaw = JSON.parse(localStorage.getItem("hv_banco_eliminados") || "{}");
+  // Compatibilidad con formato viejo (array global): ignorarlo
+  const eliminados = Array.isArray(eliminadosRaw) ? [] : (eliminadosRaw[key] || []);
   const extra = JSON.parse(localStorage.getItem("hv_banco_extra") || "{}");
   let base = [];
-  if (EJERCICIOS[key])      base = [...EJERCICIOS[key]];
-  else if (key === "Técnicos") base = [...TECNICOS];
-  else if (key === "Espacio 1") base = [...ESPACIO1];
-  else if (key === "Cabinas")  base = [...CABINAS];
+  if (EJERCICIOS[key])                             base = [...EJERCICIOS[key]];
+  else if (key === "Técnicos")                     base = [...TECNICOS];
+  else if (key === "Espacio 1")                    base = [...ESPACIO1];
+  else if (key === "Cabina 1" || key === "Cabina 2") base = [...CABINAS];
   const extras = extra[key] || [];
   return [...base, ...extras].filter(e => !eliminados.includes(e));
 }
@@ -457,7 +460,8 @@ function getBancoParaFila(label, diaIdx) {
   }
   if (label.startsWith("Técnico")) return getBancoEfectivo("Técnicos");
   if (label === "Espacio 1")       return getBancoEfectivo("Espacio 1");
-  if (label.startsWith("Cabina"))  return getBancoEfectivo("Cabinas");
+  if (label === "Cabina 1")        return getBancoEfectivo("Cabina 1");
+  if (label === "Cabina 2")        return getBancoEfectivo("Cabina 2");
   return [];
 }
 
@@ -486,9 +490,12 @@ function generarFilas() {
     // Espacio 1
     e1.push(espSem[i]||"");
 
-    // Cabinas: 2 únicas por día
-    const cab = rnd(getBancoEfectivo("Cabinas"), 2);
-    c1.push(cab[0]||""); c2.push(cab[1]||"");
+    // Cabinas: 1 de cada banco (Cabina 1 y Cabina 2), sin repetir en el mismo día
+    const bancoCab1 = getBancoEfectivo("Cabina 1");
+    const selCab1   = rnd(bancoCab1, 1);
+    const bancoCab2Sin = getBancoEfectivo("Cabina 2").filter(c => c !== (selCab1[0] || ""));
+    const selCab2   = rnd(bancoCab2Sin.length ? bancoCab2Sin : getBancoEfectivo("Cabina 2"), 1);
+    c1.push(selCab1[0]||""); c2.push(selCab2[0]||"");
   }
 
   return {
@@ -832,7 +839,7 @@ function resetChat() {
 }
 
 // ─── ADMIN BANCO DE EJERCICIOS ───────────────────────────────────────────────
-const BANCO_TABS = ["Core","Upper","Lower","Full Body","Técnicos","Espacio 1","Cabinas"];
+const BANCO_TABS = ["Core","Upper","Lower","Full Body","Técnicos","Espacio 1","Cabina 1","Cabina 2"];
 let _bancoTabActual = "Core";
 
 function abrirBanco() {
@@ -903,14 +910,21 @@ function _renderBancoContenido(key) {
   document.getElementById("banco-add-input")?.addEventListener("keydown", ev => { if (ev.key === "Enter") _agregarEjercicio(key); });
 }
 
+function _baseParaKey(key) {
+  return EJERCICIOS[key] || (key === "Técnicos" ? TECNICOS : key === "Espacio 1" ? ESPACIO1 : (key === "Cabina 1" || key === "Cabina 2") ? CABINAS : []);
+}
+
 function _eliminarEjercicio(key, nombre) {
   if (!confirm(`¿Eliminás este ejercicio?\n"${nombre}"`)) return;
-  // ¿Es del banco base o de extras?
-  let base = EJERCICIOS[key] || (key === "Técnicos" ? TECNICOS : key === "Espacio 1" ? ESPACIO1 : key === "Cabinas" ? CABINAS : []);
-  if (base.includes(nombre)) {
-    const eliminados = JSON.parse(localStorage.getItem("hv_banco_eliminados") || "[]");
-    if (!eliminados.includes(nombre)) { eliminados.push(nombre); localStorage.setItem("hv_banco_eliminados", JSON.stringify(eliminados)); }
+  if (_baseParaKey(key).includes(nombre)) {
+    // Ejercicio del banco base: guardarlo en hv_banco_eliminados por key
+    const raw = JSON.parse(localStorage.getItem("hv_banco_eliminados") || "{}");
+    const elim = Array.isArray(raw) ? {} : raw;
+    if (!elim[key]) elim[key] = [];
+    if (!elim[key].includes(nombre)) elim[key].push(nombre);
+    localStorage.setItem("hv_banco_eliminados", JSON.stringify(elim));
   } else {
+    // Ejercicio extra: quitarlo del array de extras
     const extra = JSON.parse(localStorage.getItem("hv_banco_extra") || "{}");
     extra[key] = (extra[key] || []).filter(e => e !== nombre);
     localStorage.setItem("hv_banco_extra", JSON.stringify(extra));
@@ -963,13 +977,14 @@ function _cancelarEdicion(item, key, nombreViejo) {
 }
 
 function _confirmarEdicion(key, nombreViejo, nuevoNombre) {
-  const base = EJERCICIOS[key] || (key === "Técnicos" ? TECNICOS : key === "Espacio 1" ? ESPACIO1 : key === "Cabinas" ? CABINAS : []);
-  const eliminados = JSON.parse(localStorage.getItem("hv_banco_eliminados") || "[]");
-  const extra      = JSON.parse(localStorage.getItem("hv_banco_extra")      || "{}");
-  if (base.includes(nombreViejo)) {
+  const raw    = JSON.parse(localStorage.getItem("hv_banco_eliminados") || "{}");
+  const elim   = Array.isArray(raw) ? {} : raw;
+  const extra  = JSON.parse(localStorage.getItem("hv_banco_extra") || "{}");
+  if (_baseParaKey(key).includes(nombreViejo)) {
     // Ejercicio base: marcarlo como eliminado y agregar el nuevo nombre a extras
-    if (!eliminados.includes(nombreViejo)) eliminados.push(nombreViejo);
-    localStorage.setItem("hv_banco_eliminados", JSON.stringify(eliminados));
+    if (!elim[key]) elim[key] = [];
+    if (!elim[key].includes(nombreViejo)) elim[key].push(nombreViejo);
+    localStorage.setItem("hv_banco_eliminados", JSON.stringify(elim));
     if (!extra[key]) extra[key] = [];
     if (!extra[key].includes(nuevoNombre)) extra[key].push(nuevoNombre);
   } else {
