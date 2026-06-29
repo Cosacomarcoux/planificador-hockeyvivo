@@ -123,13 +123,36 @@ td.editing input { width: 100%; border: none; outline: 2px solid var(--verde); p
 .banco-list { max-height: 300px; overflow-y: auto; margin-bottom: 4px; }
 .banco-item { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 5px 2px; border-bottom: 1px solid #f0f4f2; font-size: 12px; }
 .banco-item:last-child { border-bottom: none; }
-.banco-del-btn { background: none; border: none; cursor: pointer; font-size: 14px; flex-shrink: 0; opacity: 0.7; }
+.banco-nombre { cursor: pointer; flex: 1; min-width: 0; }
+.banco-nombre:hover { color: var(--verde); text-decoration: underline; }
+.banco-item-btns { display: flex; gap: 3px; flex-shrink: 0; }
+.banco-edit-btn { background: none; border: none; cursor: pointer; font-size: 13px; flex-shrink: 0; opacity: 0.6; }
+.banco-edit-btn:hover { opacity: 1; }
+.banco-del-btn { background: none; border: none; cursor: pointer; font-size: 13px; flex-shrink: 0; opacity: 0.7; }
 .banco-del-btn:hover { opacity: 1; }
+.banco-edit-input { flex: 1; border: 1px solid var(--verde); border-radius: 5px; padding: 4px 7px; font-size: 12px; font-family: inherit; outline: none; min-width: 0; }
+.banco-confirm-btn { background: var(--verde); color: white; border: none; border-radius: 5px; padding: 4px 9px; font-size: 12px; cursor: pointer; white-space: nowrap; }
+.banco-cancel-btn { background: none; border: 1px solid #ccc; border-radius: 5px; padding: 4px 7px; font-size: 12px; cursor: pointer; color: var(--gris); }
 .banco-add-row { display: flex; gap: 6px; margin-top: 12px; border-top: 1px solid var(--verde-borde); padding-top: 12px; }
 .banco-add-input { flex: 1; border: 1px solid var(--verde-borde); border-radius: 6px; padding: 7px 9px; font-size: 12px; outline: none; font-family: inherit; }
 .banco-add-input:focus { border-color: var(--verde); }
 .banco-add-btn { padding: 7px 14px; background: var(--verde); color: white; border: none; border-radius: 6px; font-size: 12px; cursor: pointer; font-weight: 500; white-space: nowrap; }
 .banco-add-btn:hover { background: #155e39; }
+
+/* Modal detalle de ejercicio */
+#modal-detalle { z-index: 150; }
+.detalle-label { font-size: 12px; color: var(--gris); display: block; margin-bottom: 4px; font-weight: 500; }
+.detalle-field { margin-bottom: 14px; }
+.detalle-textarea { width: 100%; border: 1px solid var(--verde-borde); border-radius: 6px; padding: 8px; font-size: 13px; font-family: inherit; outline: none; resize: vertical; min-height: 70px; }
+.detalle-textarea:focus { border-color: var(--verde); }
+.detalle-url-input { width: 100%; border: 1px solid var(--verde-borde); border-radius: 6px; padding: 8px; font-size: 13px; font-family: inherit; outline: none; }
+.detalle-url-input:focus { border-color: var(--verde); }
+.detalle-video { margin-top: 10px; border-radius: 6px; overflow: hidden; }
+.detalle-video iframe { display: block; border: none; border-radius: 6px; }
+.detalle-btns { display: flex; gap: 8px; margin-top: 16px; }
+.detalle-save { padding: 8px 18px; background: var(--verde); color: white; border: none; border-radius: 6px; font-size: 13px; cursor: pointer; font-weight: 500; }
+.detalle-save:hover { background: #155e39; }
+.detalle-close-btn { padding: 8px 14px; background: none; border: 1px solid var(--verde-borde); border-radius: 6px; font-size: 13px; cursor: pointer; color: var(--gris); }
 </style>
 </head>
 <body>
@@ -177,6 +200,26 @@ td.editing input { width: 100%; border: none; outline: 2px solid var(--verde); p
     <button class="dropdown-close-btn" onclick="cerrarDropdown()">✕</button>
   </div>
   <div id="dropdown-list"></div>
+</div>
+
+<div class="modal-overlay" id="modal-detalle">
+  <div class="modal" style="max-width:480px;">
+    <button class="modal-close" onclick="cerrarDetalle()">✕</button>
+    <h2 id="detalle-nombre-titulo" style="word-break:break-word;"></h2>
+    <div class="detalle-field">
+      <label class="detalle-label">Descripción:</label>
+      <textarea class="detalle-textarea" id="detalle-desc" placeholder="Agregá una descripción..."></textarea>
+    </div>
+    <div class="detalle-field">
+      <label class="detalle-label">Video de YouTube:</label>
+      <input class="detalle-url-input" type="text" id="detalle-yt" placeholder="https://www.youtube.com/watch?v=...">
+    </div>
+    <div class="detalle-video" id="detalle-video-container"></div>
+    <div class="detalle-btns">
+      <button class="detalle-save" onclick="_guardarDetalle()">Guardar</button>
+      <button class="detalle-close-btn" onclick="cerrarDetalle()">Cerrar</button>
+    </div>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -760,8 +803,9 @@ function cerrarBanco() {
 }
 
 function _renderBancoTabs() {
+  // IMPORTANTE: usar comillas simples en onclick para evitar conflicto con el atributo HTML
   document.getElementById("banco-tabs").innerHTML = BANCO_TABS.map(t =>
-    `<button class="banco-tab${t === _bancoTabActual ? ' active' : ''}" onclick="_cambiarBancoTab(${JSON.stringify(t)})">${t}</button>`
+    `<button class="banco-tab${t === _bancoTabActual ? ' active' : ''}" onclick="_cambiarBancoTab('${t}')">${t}</button>`
   ).join("");
 }
 
@@ -771,27 +815,48 @@ function _cambiarBancoTab(key) {
   _renderBancoContenido(key);
 }
 
+// Escapa una cadena para usarla en atributos HTML
+function _attr(s) { return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;'); }
+
 function _renderBancoContenido(key) {
   const banco = getBancoEfectivo(key);
-  let html = `<div class="banco-list">`;
+  let html = `<div class="banco-list" id="banco-list">`;
   if (!banco.length) {
     html += `<div style="color:var(--gris);font-size:13px;padding:1rem 0;text-align:center;">No hay ejercicios en este banco.</div>`;
   } else {
     banco.forEach(e => {
-      html += `<div class="banco-item">
-        <span>${e}</span>
-        <button class="banco-del-btn" title="Eliminar" onclick="_eliminarEjercicio(${JSON.stringify(key)},${JSON.stringify(e)})">🗑️</button>
+      html += `<div class="banco-item" data-key="${_attr(key)}" data-nombre="${_attr(e)}">
+        <span class="banco-nombre">${e}</span>
+        <div class="banco-item-btns">
+          <button class="banco-edit-btn" title="Editar">✏️</button>
+          <button class="banco-del-btn" title="Eliminar">🗑️</button>
+        </div>
       </div>`;
     });
   }
   html += `</div>
   <div class="banco-add-row">
     <input class="banco-add-input" id="banco-add-input" type="text" placeholder="Nombre del ejercicio nuevo...">
-    <button class="banco-add-btn" onclick="_agregarEjercicio(${JSON.stringify(key)})">Agregar</button>
+    <button class="banco-add-btn" id="banco-add-btn">Agregar</button>
   </div>`;
   document.getElementById("banco-contenido").innerHTML = html;
-  const inp = document.getElementById("banco-add-input");
-  if (inp) inp.addEventListener("keydown", ev => { if (ev.key === "Enter") _agregarEjercicio(key); });
+
+  // Event delegation para la lista
+  const lista = document.getElementById("banco-list");
+  if (lista) {
+    lista.addEventListener("click", ev => {
+      const item = ev.target.closest(".banco-item");
+      if (!item) return;
+      const itemKey    = item.dataset.key;
+      const itemNombre = item.dataset.nombre;
+      if (ev.target.classList.contains("banco-del-btn"))  _eliminarEjercicio(itemKey, itemNombre);
+      else if (ev.target.classList.contains("banco-edit-btn")) _editarEjercicio(item, itemKey, itemNombre);
+      else if (ev.target.classList.contains("banco-nombre"))   abrirDetalleEjercicio(itemNombre);
+    });
+  }
+
+  document.getElementById("banco-add-btn")?.addEventListener("click", () => _agregarEjercicio(key));
+  document.getElementById("banco-add-input")?.addEventListener("keydown", ev => { if (ev.key === "Enter") _agregarEjercicio(key); });
 }
 
 function _eliminarEjercicio(key, nombre) {
@@ -821,6 +886,112 @@ function _agregarEjercicio(key) {
   toast(`✓ "${nombre}" agregado a ${key}`);
 }
 
+// ─── EDICIÓN INLINE DE EJERCICIOS ────────────────────────────────────────────
+function _editarEjercicio(item, key, nombreViejo) {
+  item.innerHTML = `
+    <input class="banco-edit-input" type="text" value="${_attr(nombreViejo)}">
+    <div class="banco-item-btns">
+      <button class="banco-confirm-btn" title="Confirmar">✓</button>
+      <button class="banco-cancel-btn" title="Cancelar">✕</button>
+    </div>`;
+  const inp = item.querySelector(".banco-edit-input");
+  inp.focus(); inp.select();
+  item.querySelector(".banco-confirm-btn").onclick = () => {
+    const nuevoNombre = inp.value.trim();
+    if (!nuevoNombre || nuevoNombre === nombreViejo) { _cancelarEdicion(item, key, nombreViejo); return; }
+    _confirmarEdicion(key, nombreViejo, nuevoNombre);
+  };
+  item.querySelector(".banco-cancel-btn").onclick = () => _cancelarEdicion(item, key, nombreViejo);
+  inp.addEventListener("keydown", ev => {
+    if (ev.key === "Enter")  item.querySelector(".banco-confirm-btn").click();
+    if (ev.key === "Escape") _cancelarEdicion(item, key, nombreViejo);
+  });
+}
+
+function _cancelarEdicion(item, key, nombreViejo) {
+  item.dataset.nombre = nombreViejo;
+  item.innerHTML = `
+    <span class="banco-nombre">${nombreViejo}</span>
+    <div class="banco-item-btns">
+      <button class="banco-edit-btn" title="Editar">✏️</button>
+      <button class="banco-del-btn" title="Eliminar">🗑️</button>
+    </div>`;
+}
+
+function _confirmarEdicion(key, nombreViejo, nuevoNombre) {
+  const base = EJERCICIOS[key] || (key === "Técnicos" ? TECNICOS : key === "Espacio 1" ? ESPACIO1 : key === "Cabinas" ? CABINAS : []);
+  const eliminados = JSON.parse(localStorage.getItem("hv_banco_eliminados") || "[]");
+  const extra      = JSON.parse(localStorage.getItem("hv_banco_extra")      || "{}");
+  if (base.includes(nombreViejo)) {
+    // Ejercicio base: marcarlo como eliminado y agregar el nuevo nombre a extras
+    if (!eliminados.includes(nombreViejo)) eliminados.push(nombreViejo);
+    localStorage.setItem("hv_banco_eliminados", JSON.stringify(eliminados));
+    if (!extra[key]) extra[key] = [];
+    if (!extra[key].includes(nuevoNombre)) extra[key].push(nuevoNombre);
+  } else {
+    // Ejercicio extra: renombrarlo en el array
+    extra[key] = (extra[key] || []).map(e => e === nombreViejo ? nuevoNombre : e);
+  }
+  localStorage.setItem("hv_banco_extra", JSON.stringify(extra));
+  // Migrar detalle al nuevo nombre si existe
+  const detalles = JSON.parse(localStorage.getItem("hv_ejercicio_detalle") || "{}");
+  if (detalles[nombreViejo]) { detalles[nuevoNombre] = detalles[nombreViejo]; delete detalles[nombreViejo]; localStorage.setItem("hv_ejercicio_detalle", JSON.stringify(detalles)); }
+  toast("✓ Ejercicio renombrado");
+  _renderBancoContenido(key);
+}
+
+// ─── DETALLE DE EJERCICIO (DESCRIPCIÓN + VIDEO) ───────────────────────────────
+let _detalleNombreActual = null;
+
+function abrirDetalleEjercicio(nombre) {
+  _detalleNombreActual = nombre;
+  const detalles = JSON.parse(localStorage.getItem("hv_ejercicio_detalle") || "{}");
+  const d = detalles[nombre] || {};
+  document.getElementById("detalle-nombre-titulo").textContent = nombre;
+  document.getElementById("detalle-desc").value = d.descripcion || "";
+  const ytInp = document.getElementById("detalle-yt");
+  ytInp.value = d.youtube || "";
+  _actualizarVideoEmbed(d.youtube || "");
+  ytInp.oninput = () => _actualizarVideoEmbed(ytInp.value);
+  document.getElementById("modal-detalle").classList.add("open");
+}
+
+function cerrarDetalle() {
+  document.getElementById("modal-detalle").classList.remove("open");
+  _detalleNombreActual = null;
+}
+
+function _extraerYouTubeId(url) {
+  if (!url) return null;
+  let m = url.match(/[?&]v=([a-zA-Z0-9_-]{11})/);
+  if (m) return m[1];
+  m = url.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/);
+  if (m) return m[1];
+  m = url.match(/\/embed\/([a-zA-Z0-9_-]{11})/);
+  if (m) return m[1];
+  return null;
+}
+
+function _actualizarVideoEmbed(url) {
+  const cont = document.getElementById("detalle-video-container");
+  const id = _extraerYouTubeId(url.trim());
+  cont.innerHTML = id
+    ? `<iframe width="100%" height="200" src="https://www.youtube.com/embed/${id}" frameborder="0" allowfullscreen></iframe>`
+    : "";
+}
+
+function _guardarDetalle() {
+  if (!_detalleNombreActual) return;
+  const detalles = JSON.parse(localStorage.getItem("hv_ejercicio_detalle") || "{}");
+  detalles[_detalleNombreActual] = {
+    descripcion: document.getElementById("detalle-desc").value.trim(),
+    youtube:     document.getElementById("detalle-yt").value.trim()
+  };
+  localStorage.setItem("hv_ejercicio_detalle", JSON.stringify(detalles));
+  toast("✓ Detalle guardado");
+  cerrarDetalle();
+}
+
 // ─── INICIALIZACIÓN ──────────────────────────────────────────────────────────
 document.getElementById("user-input").addEventListener("keydown", e => {
   if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
@@ -830,6 +1001,9 @@ document.getElementById("modal-hist").addEventListener("click", e => {
 });
 document.getElementById("modal-banco").addEventListener("click", e => {
   if (e.target === document.getElementById("modal-banco")) cerrarBanco();
+});
+document.getElementById("modal-detalle").addEventListener("click", e => {
+  if (e.target === document.getElementById("modal-detalle")) cerrarDetalle();
 });
 document.addEventListener("click", e => {
   const panel = document.getElementById("ejercicio-dropdown");
