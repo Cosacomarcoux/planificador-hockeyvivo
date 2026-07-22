@@ -156,6 +156,36 @@ td.editing input { width: 100%; border: none; outline: 2px solid var(--verde); p
 
 /* Área de impresión */
 #print-area { display: none; }
+
+/* ─── Intenciones por nivel ─── */
+.ej-nombre { font-weight: 500; }
+.ints { margin-top: 4px; display: flex; flex-direction: column; gap: 2px; font-size: 10px; line-height: 1.35; }
+.int { padding: 2px 5px; border-radius: 4px; border-left: 3px solid; }
+.int-i { background: #ecfdf5; border-color: #10b981; color: #065f46; }
+.int-m { background: #fffbeb; border-color: #f59e0b; color: #92400e; }
+.int-a { background: #fef2f2; border-color: #ef4444; color: #991b1b; }
+.int b { font-weight: 700; }
+.edit-int-btn { border: none; background: none; cursor: pointer; font-size: 11px; opacity: .55; padding: 0 2px; }
+.edit-int-btn:hover { opacity: 1; }
+
+/* Móvil: la grilla scrollea horizontal con el dedo */
+@media (max-width: 768px) {
+  .plan-outer { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .plan-outer table { min-width: 860px; }
+  .action-btns { flex-wrap: wrap; }
+}
+.fase-formato { background: #eef2ff; border: 1px solid #c7d2fe; color: #3730a3; border-radius: 8px; padding: 6px 10px; font-size: 12px; margin-bottom: 8px; }
+
+/* Modal editor de intenciones */
+#modal-int { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 600; align-items: center; justify-content: center; }
+#modal-int.open { display: flex; }
+#modal-int .mi-card { background: #fff; border-radius: 12px; padding: 18px; width: min(480px, 92vw); max-height: 85vh; overflow-y: auto; }
+#modal-int h3 { font-size: 14px; margin-bottom: 10px; }
+#modal-int label { font-size: 11px; font-weight: 700; display: block; margin: 8px 0 3px; }
+#modal-int textarea { width: 100%; min-height: 48px; border: 1px solid #d1d5db; border-radius: 6px; padding: 6px 8px; font-size: 12px; font-family: inherit; resize: vertical; }
+#modal-int .mi-btns { display: flex; gap: 8px; margin-top: 12px; justify-content: flex-end; }
+#modal-int button { padding: 7px 14px; border-radius: 7px; border: 1px solid #d1d5db; background: #fff; cursor: pointer; font-size: 12px; }
+#modal-int button.primary { background: var(--verde); color: #fff; border-color: var(--verde); }
 @page { size: landscape; margin: 1cm; }
 @media print {
   body > *:not(#print-area) { display: none !important; }
@@ -164,6 +194,10 @@ td.editing input { width: 100%; border: none; outline: 2px solid var(--verde); p
   #print-area p  { font-size: 10px; color: #555; margin-bottom: 10px; }
   #print-area table { width: 100%; border-collapse: collapse; font-size: 10px; }
   #print-area th, #print-area td { border: 1px solid #555 !important; padding: 5px 7px !important; background: white !important; color: black !important; vertical-align: top; line-height: 1.4; }
+  #print-area .ints { font-size: 8px; margin-top: 3px; }
+  #print-area .int { border-left: 2px solid #555 !important; padding: 1px 3px; }
+  #print-area .edit-int-btn { display: none !important; }
+  #print-area .fase-formato { font-size: 10px; border: 1px solid #999; padding: 4px 6px; margin-bottom: 6px; }
   #print-area th { font-weight: 700; background: #eee !important; text-align: center; }
   #print-area td:first-child { font-weight: 700; white-space: nowrap; }
 }
@@ -232,6 +266,24 @@ td.editing input { width: 100%; border: none; outline: 2px solid var(--verde); p
     <div class="detalle-btns">
       <button class="detalle-save" onclick="_guardarDetalle()">Guardar</button>
       <button class="detalle-close-btn" onclick="cerrarDetalle()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal editor de intenciones por nivel -->
+<div id="modal-int" onclick="if(event.target===this)cerrarEditorInt()">
+  <div class="mi-card">
+    <h3>✏️ Intenciones — <span id="mi-titulo"></span></h3>
+    <label style="color:#065f46">🟢 Iniciado</label>
+    <textarea id="mi-ini"></textarea>
+    <label style="color:#92400e">🟡 Intermedio</label>
+    <textarea id="mi-int"></textarea>
+    <label style="color:#991b1b">🔴 Avanzado</label>
+    <textarea id="mi-avz"></textarea>
+    <div class="mi-btns">
+      <button onclick="restaurarInt()">↩ Restaurar original</button>
+      <button onclick="cerrarEditorInt()">Cancelar</button>
+      <button class="primary" onclick="guardarInt()">Guardar</button>
     </div>
   </div>
 </div>
@@ -386,6 +438,120 @@ const ESPACIO1 = [
   "Peine doble + Amague en T"
 ];
 
+// ─── INTENCIONES POR NIVEL (modelo STEP: bloque → variable → presión) ───────
+// i = Iniciado · m = Intermedio · a = Avanzado. Editables desde la grilla (✏️);
+// los cambios se guardan en localStorage y pisan estos valores por defecto.
+const INTENCIONES_TECNICOS = {
+  "X de Dribling": { i:"Gesto amplio y lento, bocha siempre en la pala", m:"Ritmo continuo, cabeza arriba al cruzar el centro", a:"Velocidad máxima con cambio de ritmo en cada vértice" },
+  "mini Z": { i:"Quiebres cortos caminando, muñecas firmes", m:"Quiebres explosivos, el tronco acompaña", a:"Encadenar sin pausa + salida en velocidad" },
+  "peine combinado con escape": { i:"Separar peine y escape en dos tiempos", m:"Unir todo a ritmo de partido", a:"Escape al espacio libre según señal del profe" },
+  "X de conducción": { i:"Bocha pegada a la pala en las diagonales", m:"Mirada al frente, apoyo bajo", a:"Máxima velocidad, frenos limpios en los vértices" },
+  "mini Z ambos laterales": { i:"Dominar lado fuerte primero; lado débil lento", m:"Simetría de ritmo en ambos lados", a:"Alternancia aleatoria a la orden" },
+  "Amague en T": { i:"Dibujar la T caminando, pala firme", m:"Amague creíble con los hombros", a:"Contra defensor pasivo, salida explosiva" },
+  "Anticorredizos": { i:"Gesto de barrida corta sin oposición", m:"Ritmo y reposicionamiento rápido", a:"En carrera con bocha llegando de frente" },
+  "Amague en Y": { i:"Dos salidas claras, sin velocidad", m:"Engaño con el cuerpo antes de definir lado", a:"Decisión tardía según el defensor" },
+  "Peine Corto": { i:"Toques cortos y regulares en el lugar", m:"En desplazamiento con cabeza arriba", a:"Bajo presión de tiempo, sin perder calidad" },
+  "1/2 8 de habilidades": { i:"Recorrido caminando, por partes", m:"Fluido completo sin pausas", a:"Contra reloj manteniendo la calidad" },
+  "Dribling Entro-salgo": { i:"Entrada y salida marcadas, a paso", m:"Cambio de ritmo real al salir", a:"Leer el espacio: entrar solo si está libre" },
+  "Eliminador": { i:"Gesto de eliminación sin oponente", m:"Con obstáculo, a ritmo", a:"1v1 real con defensor semiactivo" },
+  "escalera de quites": { i:"Quites de a uno, técnica limpia", m:"Secuencia completa con ritmo", a:"Velocidad máxima + quite final ante señal" },
+  "Rombo de conducciones": { i:"Lados del rombo a paso controlado", m:"Cada lado con una superficie distinta", a:"Cambio de ritmo por lado + cabeza arriba" },
+  "Amague en ángulo": { i:"Ángulo amplio y lento", m:"Cerrar el ángulo con salida rápida", a:"Variar el ángulo según señal tardía" },
+  "Enganches en V": { i:"V corta con pala firme, sin ritmo", m:"Enganche + aceleración de dos pasos", a:"Encadenar V izquierda/derecha a la orden" },
+  "Conducción en L": { i:"Giro de la L marcado, en dos tiempos", m:"Giro continuo sin frenar del todo", a:"L a máxima velocidad + pase al salir" },
+  "Conducción en U": { i:"Curva amplia con bocha cerca", m:"Cerrar la U con apoyo bajo", a:"U con cambio de ritmo en el fondo" },
+  "Conducción diagonal": { i:"Diagonal a paso, protegiendo la bocha", m:"Diagonal a ritmo con mirada al frente", a:"Diagonal a máxima + definición al final" },
+  "Slalom de corredizos": { i:"Corredizo a paso entre conos", m:"Ritmo continuo sin tocar conos", a:"Contra reloj con bocha controlada" },
+  "Pase y recepción dinámica": { i:"Control parado, pase con apoyo", m:"Recepción orientada en movimiento", a:"Primera intención + comunicación" },
+  "Jab corredizo": { i:"Jab corto sin desplazamiento", m:"Jab en desplazamiento lateral", a:"Jab como gatillo de robo en 1v1" },
+  "8 de habilidades": { i:"Recorrido por partes, calidad ante todo", m:"Completo y fluido", a:"Contra reloj + variar superficie por vuelta" },
+  "Peine doble": { i:"Dos peines separados, ritmo bajo", m:"Unidos, con desplazamiento", a:"Velocidad + salida al espacio" },
+  "Peine corto con salida en diagonal": { i:"Peine y salida en dos tiempos", m:"Salida diagonal explosiva", a:"Elegir la diagonal según señal tardía" },
+  "Z lineal": { i:"Quiebres marcados, a paso", m:"Ritmo alto con tronco activo", a:"Máxima, con freno y arranque en cada quiebre" },
+  "Z hacia adelante": { i:"Avanzar con quiebres suaves", m:"Ganar metros en cada quiebre", a:"Proteger la bocha con el cuerpo a velocidad" },
+  "Amague en T + eliminador": { i:"Por partes, sin velocidad", m:"Encadenado fluido", a:"Ante defensor pasivo, con salida definida" },
+  "Enganches laterales amplios": { i:"Enganche amplio caminando", m:"Con cambio de dirección real", a:"Alternancia aleatoria + aceleración" },
+  "1/8 + amague en T": { i:"Separar las dos partes", m:"Transición sin pausa", a:"A velocidad, con defensor de sombra" },
+  "Anticorredizos en slalom": { i:"Gesto por estación, a paso", m:"Continuidad entre conos", a:"En carrera con tiempo objetivo" },
+  "Peines clásicos combinados": { i:"Cada peine por separado", m:"Combinación fluida sin mirar la bocha", a:"Secuencia a la orden del profe" },
+  "½ X anticorredizo en z3": { i:"Recorrido a paso, gesto limpio en z3", m:"Ritmo real con anticorredizo firme", a:"Máxima velocidad + definición de primera" },
+  "X de escape": { i:"Escape marcado en dos tiempos", m:"Escape con cambio de ritmo", a:"Escape según el lado que indique el profe" }
+};
+
+const INTENCIONES_DEFAULT = {
+  "Técnicos":  { i:"Gesto lento y correcto, repetición en bloque", m:"Ritmo real, cabeza arriba, encadenado fluido", a:"Velocidad máxima + variabilidad y decisión" },
+  "Espacio 1": { i:"Recorrido guiado a paso, un gesto a la vez", m:"Fluido y continuo con cabeza arriba", a:"Contra reloj, con variantes a la orden" },
+  "Cabina":    { i:"Secuencia por partes, caminando, foco en el gesto", m:"Continua sin pausas, precisión en los pases", a:"Ritmo de partido: tiempo objetivo y pases tensos" }
+};
+
+function getIntenciones(nombre, tipo) {
+  const overrides = JSON.parse(localStorage.getItem("hv_intenciones") || "{}");
+  if (overrides[nombre]) return overrides[nombre];
+  if (INTENCIONES_TECNICOS[nombre]) return INTENCIONES_TECNICOS[nombre];
+  if (tipo.startsWith("Cabina")) return INTENCIONES_DEFAULT["Cabina"];
+  return INTENCIONES_DEFAULT[tipo] || INTENCIONES_DEFAULT["Técnicos"];
+}
+
+// ─── FORMATO DEL CIRCUITO SEGÚN FASE ─────────────────────────────────────────
+const FASES_FORMATO = {
+  "Semana A – Fuerza":     "💪 FUERZA — ejecución controlada: 40s trabajo / 20s pausa · tempo lento en la fase excéntrica · 3-4 vueltas",
+  "Semana B – Potencia":   "⚡ POTENCIA — ejecución explosiva: 20s a máxima intención / 40s pausa · pocas reps de calidad · 3-4 vueltas",
+  "Semana C – Pliometría": "🦘 PLIOMETRÍA — saltos y rebotes: 15-20s trabajo / recuperación completa (60-90s) · contactos de calidad, frenar si se degrada"
+};
+
+// ─── HISTORIAL ANTI-REPETICIÓN POR DÍA DE LA SEMANA ─────────────────────────
+// Recuerda qué ejercicios salieron cada día (lunes, martes...) en las últimas
+// semanas, para que el alumno que viene siempre el mismo día no repita.
+const HIST_DIAS_VENTANA_MS = 21 * 24 * 60 * 60 * 1000; // 3 semanas
+
+function _histDia() {
+  return JSON.parse(localStorage.getItem("hv_hist_dia") || "{}");
+}
+
+function _usadosRecientes(diaIdx, categoria) {
+  const h = _histDia();
+  const lista = (h[diaIdx] && h[diaIdx][categoria]) || [];
+  const corte = Date.now() - HIST_DIAS_VENTANA_MS;
+  return new Set(lista.filter(x => x.t >= corte).map(x => x.n));
+}
+
+// Elige n ejercicios del banco evitando los usados ese día en las últimas
+// 3 semanas. Si el banco filtrado no alcanza, completa con el banco entero.
+function pickSinRepetir(banco, n, diaIdx, categoria) {
+  const usados = _usadosRecientes(diaIdx, categoria);
+  const frescos = banco.filter(e => !usados.has(e));
+  const sel = rnd(frescos, n);
+  if (sel.length < n) {
+    const faltan = n - sel.length;
+    const resto = banco.filter(e => !sel.includes(e));
+    sel.push(...rnd(resto, faltan));
+  }
+  return sel;
+}
+
+function registrarHistorialPlan() {
+  if (!planActual) return;
+  const h = _histDia();
+  const ahora = Date.now();
+  const corte = ahora - HIST_DIAS_VENTANA_MS;
+  const registrar = (diaIdx, categoria, nombre) => {
+    if (!nombre) return;
+    if (!h[diaIdx]) h[diaIdx] = {};
+    if (!h[diaIdx][categoria]) h[diaIdx][categoria] = [];
+    h[diaIdx][categoria] = h[diaIdx][categoria].filter(x => x.t >= corte && x.n !== nombre);
+    h[diaIdx][categoria].push({ n: nombre, t: ahora });
+  };
+  for (let d = 0; d < 5; d++) {
+    const grupo = planActual.filas["Grupo"][d];
+    ["Físico 1","Físico 2","Físico 3","Físico 4"].forEach(f => registrar(d, grupo, planActual.filas[f][d]));
+    ["Técnico 1","Técnico 2"].forEach(f => registrar(d, "Técnicos", planActual.filas[f][d]));
+    registrar(d, "Espacio 1", planActual.filas["Espacio 1"][d]);
+    registrar(d, "Cabina 1", planActual.filas["Cabina 1"][d]);
+    registrar(d, "Cabina 2", planActual.filas["Cabina 2"][d]);
+  }
+  localStorage.setItem("hv_hist_dia", JSON.stringify(h));
+}
+
 // ─── ROTACIONES FIJAS ────────────────────────────────────────────────────────
 const GRUPOS_SEMANA = {
   1: ["Core","Core","Upper","Lower","Full Body"],
@@ -432,7 +598,12 @@ let planActual = null;
 function rnd(arr, n) {
   const s = [...arr];
   const r = [];
-  for (let i = 0; i < Math.min(n, s.length); i++) {
+  // FIX: el límite se calcula UNA vez. Antes se recalculaba en cada vuelta
+  // mientras s se achicaba con splice, y cuando pedías casi tantos elementos
+  // como había, devolvía la mitad (ej: pedir 5 de 8 devolvía 4 → por eso a
+  // veces quedaba un día sin Espacio 1).
+  const total = Math.min(n, s.length);
+  for (let i = 0; i < total; i++) {
     const idx = Math.floor(Math.random() * s.length);
     r.push(s.splice(idx, 1)[0]);
   }
@@ -479,26 +650,29 @@ function generarFilas() {
   const f1=[], f2=[], f3=[], f4=[];
   const t1=[], t2=[], e1=[], c1=[], c2=[];
 
-  // Espacio 1: 5 únicos para la semana
-  const espSem = rnd(getBancoEfectivo("Espacio 1"), 5);
+  // Espacio 1: únicos en la semana Y sin repetir lo de las últimas 3 semanas
+  const espUsadosSemana = [];
 
   for (let i = 0; i < 5; i++) {
-    // Físicos: 4 únicos del grupo del día
-    const fis = rnd(getBancoEfectivo(grupos[i]), 4);
+    // Físicos: 4 únicos del grupo del día, evitando lo usado ese día de la
+    // semana en las últimas 3 semanas (memoria anti-repetición)
+    const fis = pickSinRepetir(getBancoEfectivo(grupos[i]), 4, i, grupos[i]);
     f1.push(fis[0]||""); f2.push(fis[1]||""); f3.push(fis[2]||""); f4.push(fis[3]||"");
 
-    // Técnicos: 2 únicos por día
-    const tec = rnd(getBancoEfectivo("Técnicos"), 2);
+    // Técnicos: 2 únicos por día, con memoria
+    const tec = pickSinRepetir(getBancoEfectivo("Técnicos"), 2, i, "Técnicos");
     t1.push(tec[0]||""); t2.push(tec[1]||"");
 
-    // Espacio 1
-    e1.push(espSem[i]||"");
+    // Espacio 1: con memoria + sin repetir dentro de la misma semana
+    const bancoEsp = getBancoEfectivo("Espacio 1").filter(e => !espUsadosSemana.includes(e));
+    const esp = pickSinRepetir(bancoEsp.length ? bancoEsp : getBancoEfectivo("Espacio 1"), 1, i, "Espacio 1");
+    espUsadosSemana.push(esp[0]);
+    e1.push(esp[0]||"");
 
-    // Cabinas: 1 de cada banco (Cabina 1 y Cabina 2), sin repetir en el mismo día
-    const bancoCab1 = getBancoEfectivo("Cabina 1");
-    const selCab1   = rnd(bancoCab1, 1);
+    // Cabinas: 1 de cada banco, con memoria, sin repetir en el mismo día
+    const selCab1 = pickSinRepetir(getBancoEfectivo("Cabina 1"), 1, i, "Cabina 1");
     const bancoCab2Sin = getBancoEfectivo("Cabina 2").filter(c => c !== (selCab1[0] || ""));
-    const selCab2   = rnd(bancoCab2Sin.length ? bancoCab2Sin : getBancoEfectivo("Cabina 2"), 1);
+    const selCab2 = pickSinRepetir(bancoCab2Sin.length ? bancoCab2Sin : getBancoEfectivo("Cabina 2"), 1, i, "Cabina 2");
     c1.push(selCab1[0]||""); c2.push(selCab2[0]||"");
   }
 
@@ -519,8 +693,35 @@ function generarFilas() {
 }
 
 // ─── TABLA ───────────────────────────────────────────────────────────────────
+const _verInts = () => localStorage.getItem("hv_ver_ints") !== "0";
+
+function _tipoIntFila(label) {
+  if (label.startsWith("Técnico")) return "Técnicos";
+  if (label === "Espacio 1") return "Espacio 1";
+  if (label.startsWith("Cabina")) return "Cabina";
+  return null;
+}
+
+function renderCeldaHTML(label, v) {
+  if (!v) return "";
+  const tipo = _tipoIntFila(label);
+  if (!tipo || !_verInts()) return `<div class="ej-nombre">${v}</div>`;
+  const it = getIntenciones(v, tipo);
+  return `<div class="ej-nombre">${v} <button class="edit-int-btn" title="Editar intenciones"
+    onclick="event.stopPropagation();abrirEditorInt('${_attr(v)}','${tipo}')">✏️</button></div>
+  <div class="ints">
+    <div class="int int-i"><b>Ini:</b> ${it.i}</div>
+    <div class="int int-m"><b>Int:</b> ${it.m}</div>
+    <div class="int int-a"><b>Avz:</b> ${it.a}</div>
+  </div>`;
+}
+
 function renderTabla(filas) {
-  let h = `<div class="plan-outer"><table><thead><tr><th class="row-header">Fila / Día</th>`;
+  let h = `<div class="plan-outer">`;
+  if (estado.fase && FASES_FORMATO[estado.fase]) {
+    h += `<div class="fase-formato">${FASES_FORMATO[estado.fase]}</div>`;
+  }
+  h += `<table><thead><tr><th class="row-header">Fila / Día</th>`;
   DIAS.forEach((d, i) => {
     h += `<th class="col-header"><span class="dia-label">${d}</span><button class="copy-dia-btn" onclick="copiarDia(${i})">📲 Copiar día</button></th>`;
   });
@@ -534,7 +735,7 @@ function renderTabla(filas) {
       if (esAuto) {
         h += `<td>${v}</td>`;
       } else {
-        h += `<td class="editable" data-fila="${label}" data-dia="${di}" onclick="editarCelda(this)">${v}</td>`;
+        h += `<td class="editable" data-fila="${label}" data-dia="${di}" data-nombre="${_attr(v)}" onclick="editarCelda(this)">${renderCeldaHTML(label, v)}</td>`;
       }
     });
     h += `</tr>`;
@@ -598,9 +799,67 @@ function _seleccionarEjercicio(nombre) {
   if (!_dropdownTd) return;
   const fila = _dropdownTd.dataset.fila;
   const dia  = parseInt(_dropdownTd.dataset.dia);
-  _dropdownTd.textContent = nombre;
+  _dropdownTd.dataset.nombre = nombre;
+  _dropdownTd.innerHTML = renderCeldaHTML(fila, nombre);
   if (planActual && planActual.filas[fila]) planActual.filas[fila][dia] = nombre;
   cerrarDropdown();
+}
+
+// ─── EDITOR DE INTENCIONES ───────────────────────────────────────────────────
+let _intEditando = null;
+
+function abrirEditorInt(nombre, tipo) {
+  _intEditando = { nombre, tipo };
+  const it = getIntenciones(nombre, tipo);
+  document.getElementById("mi-titulo").textContent = nombre;
+  document.getElementById("mi-ini").value = it.i;
+  document.getElementById("mi-int").value = it.m;
+  document.getElementById("mi-avz").value = it.a;
+  document.getElementById("modal-int").classList.add("open");
+}
+
+function guardarInt() {
+  if (!_intEditando) return;
+  const overrides = JSON.parse(localStorage.getItem("hv_intenciones") || "{}");
+  overrides[_intEditando.nombre] = {
+    i: document.getElementById("mi-ini").value.trim(),
+    m: document.getElementById("mi-int").value.trim(),
+    a: document.getElementById("mi-avz").value.trim(),
+  };
+  localStorage.setItem("hv_intenciones", JSON.stringify(overrides));
+  cerrarEditorInt();
+  _rerenderUltimaTabla();
+  toast("✓ Intenciones guardadas");
+}
+
+function restaurarInt() {
+  if (!_intEditando) return;
+  const overrides = JSON.parse(localStorage.getItem("hv_intenciones") || "{}");
+  delete overrides[_intEditando.nombre];
+  localStorage.setItem("hv_intenciones", JSON.stringify(overrides));
+  cerrarEditorInt();
+  _rerenderUltimaTabla();
+  toast("✓ Intenciones restauradas al valor original");
+}
+
+function cerrarEditorInt() {
+  document.getElementById("modal-int").classList.remove("open");
+  _intEditando = null;
+}
+
+function toggleInts() {
+  localStorage.setItem("hv_ver_ints", _verInts() ? "0" : "1");
+  _rerenderUltimaTabla();
+}
+
+function _rerenderUltimaTabla() {
+  if (!planActual) return;
+  const all = document.querySelectorAll(".plan-outer");
+  if (!all.length) return;
+  const last = all[all.length - 1];
+  const temp = document.createElement("div");
+  temp.innerHTML = renderTabla(planActual.filas);
+  last.replaceWith(temp.firstElementChild);
 }
 
 function cerrarDropdown() {
@@ -612,10 +871,18 @@ function cerrarDropdown() {
 function copiarDia(diaIdx) {
   if (!planActual) return;
   const dia = DIAS[diaIdx];
-  let txt = `*🏑 Hockey Vivo – ${planActual.titulo}*\n*${dia}*\n\n`;
+  let txt = `*🏑 Hockey Vivo – ${planActual.titulo}*\n*${dia}*\n`;
+  if (estado.fase && FASES_FORMATO[estado.fase]) txt += `_${FASES_FORMATO[estado.fase]}_\n`;
+  txt += `\n`;
   LABELS_FILA.forEach(label => {
     const val = (planActual.filas[label] || [])[diaIdx];
-    if (val) txt += `• *${label}:* ${val}\n`;
+    if (!val) return;
+    txt += `• *${label}:* ${val}\n`;
+    const tipo = _tipoIntFila(label);
+    if (tipo && _verInts()) {
+      const it = getIntenciones(val, tipo);
+      txt += `   🟢 Ini: ${it.i}\n   🟡 Int: ${it.m}\n   🔴 Avz: ${it.a}\n`;
+    }
   });
   navigator.clipboard.writeText(txt).then(() => toast(`✓ ${dia} copiado para WhatsApp`));
 }
@@ -650,7 +917,10 @@ function guardarPlan() {
     filas:  planActual.filas
   });
   localStorage.setItem("hv_planes", JSON.stringify(planes));
-  toast("✓ Plan guardado");
+  // Registrar en la memoria anti-repetición: estos ejercicios no volverán a
+  // proponerse el mismo día de la semana durante las próximas 3 semanas.
+  registrarHistorialPlan();
+  toast("✓ Plan guardado (y ejercicios registrados en la memoria)");
 }
 
 // ─── HISTORIAL ───────────────────────────────────────────────────────────────
@@ -709,21 +979,24 @@ function botonesAccion() {
     <button class="action-btn primary" onclick="guardarPlan()">💾 Guardar plan</button>
     <button class="action-btn" onclick="copiarTablaCompleta()">📋 Copiar todo para WhatsApp</button>
     <button class="action-btn" onclick="exportarPDF()">🖨️ Exportar PDF</button>
+    <button class="action-btn" onclick="toggleInts()">👁 Intenciones sí/no</button>
   </div>`;
 }
 
 // ─── EXPORTAR PDF ─────────────────────────────────────────────────────────────
 function exportarPDF() {
   if (!planActual) { toast("Primero generá o cargá un plan"); return; }
-  const tabla = document.querySelector(".plan-outer table");
-  if (!tabla) { toast("No hay tabla para exportar"); return; }
+  const outers = document.querySelectorAll(".plan-outer");
+  if (!outers.length) { toast("No hay tabla para exportar"); return; }
+  // La última tabla (la del plan actual), incluyendo el banner de fase
+  const cont = outers[outers.length - 1];
   const pa = document.getElementById("print-area");
   pa.innerHTML = `
     <h2>🏑 Hockey Vivo – ${planActual.titulo}</h2>
     <p>${planActual.fecha}${estado.foco ? ' · Foco: ' + estado.foco : ''}</p>
-    ${tabla.outerHTML}`;
-  // Eliminar botones "Copiar día" de la tabla clonada
-  pa.querySelectorAll(".copy-dia-btn").forEach(b => b.remove());
+    ${cont.outerHTML}`;
+  // Eliminar botones de la copia impresa
+  pa.querySelectorAll(".copy-dia-btn, .edit-int-btn").forEach(b => b.remove());
   window.print();
   pa.innerHTML = "";
 }
@@ -1079,7 +1352,54 @@ document.addEventListener("click", e => {
   if (!panel.contains(e.target) && e.target !== _dropdownTd && !_dropdownTd?.contains(e.target)) cerrarDropdown();
 });
 
-addAIMsg(PREGUNTAS[0].texto, PREGUNTAS[0].opts);
+// ─── SINCRONIZACIÓN MULTI-DISPOSITIVO ────────────────────────────────────────
+// El estado compartido (planes, intenciones, banco, memoria) vive en el
+// servidor. Al abrir, se descarga y pisa lo local; cada cambio local se sube
+// automáticamente. Si no hay conexión, la app sigue funcionando local.
+const CLAVES_SYNC = ["hv_planes","hv_intenciones","hv_hist_dia","hv_banco_extra","hv_banco_eliminados","hv_ejercicio_detalle"];
+const _lsSetNativo = Storage.prototype.setItem.bind(localStorage);
+const _syncTimers = {};
+
+localStorage.setItem = function (k, v) {
+  _lsSetNativo(k, v);
+  if (!CLAVES_SYNC.includes(k)) return;
+  // Debounce: si hay varios cambios seguidos, se sube solo el último
+  clearTimeout(_syncTimers[k]);
+  _syncTimers[k] = setTimeout(() => {
+    fetch('/api/estado/' + k, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'x-clave': localStorage.getItem('hv_clave') || '' },
+      body: JSON.stringify({ valor: JSON.parse(v) }),
+    }).then(r => { if (!r.ok && r.status !== 503) throw 0; })
+      .catch(() => toast('⚠️ Sin conexión: el cambio quedó solo en este dispositivo'));
+  }, 400);
+};
+
+async function _bootSync() {
+  try {
+    let clave = localStorage.getItem('hv_clave') || '';
+    let r = await fetch('/api/estado', { headers: { 'x-clave': clave } });
+    while (r.status === 401) {
+      clave = prompt('🔒 Clave de acceso del planificador:') || '';
+      if (!clave) break; // canceló → modo solo-local
+      _lsSetNativo('hv_clave', clave);
+      r = await fetch('/api/estado', { headers: { 'x-clave': clave } });
+    }
+    if (r.ok) {
+      const d = await r.json();
+      if (d.estado && Object.keys(d.estado).length) {
+        for (const k of CLAVES_SYNC) {
+          if (d.estado[k] !== undefined && d.estado[k] !== null) {
+            _lsSetNativo(k, JSON.stringify(d.estado[k]));
+          }
+        }
+        toast('✓ Sincronizado con el servidor');
+      }
+    }
+  } catch (e) { console.warn('Sin servidor de sync (modo local):', e.message); }
+  addAIMsg(PREGUNTAS[0].texto, PREGUNTAS[0].opts);
+}
+_bootSync();
 </script>
 </body>
 </html>
