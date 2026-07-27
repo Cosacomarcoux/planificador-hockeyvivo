@@ -684,23 +684,27 @@ function renderBiblioteca() {
   const q = (document.getElementById('bib-buscar').value || '').toLowerCase().trim();
   const fg = document.getElementById('bib-grupo').value;
   const fn = document.getElementById('bib-nivel').value;
-  const lista = _biblioteca.filter(e =>
-    (!fg || e.grupo === fg) && (!fn || e.nivel === fn) &&
-    (!q || e.nombre.toLowerCase().includes(q) || (e.equipo || '').toLowerCase().includes(q)));
+  const lista = _biblioteca.filter(e => {
+    const nom = (e.nombre_es || e.nombre || '').toLowerCase();
+    return (!fg || e.grupo === fg) && (!fn || e.nivel === fn) &&
+      (!q || nom.includes(q) || (e.equipo || '').toLowerCase().includes(q));
+  });
   document.getElementById('bib-conteo').textContent =
     lista.length + ' de ' + _biblioteca.length + ' ejercicios';
   const grid = document.getElementById('bib-grid');
   if (!lista.length) { grid.innerHTML = '<p style="color:#6b7280">Sin resultados con esos filtros.</p>'; return; }
   grid.innerHTML = lista.map(e => {
-    const ya = _bibYaEnBanco(e.nombre, e.grupo);
+    const nombre = e.nombre_es || e.nombre;                       // español si existe
+    const instr = e.instrucciones_es || e.instrucciones || '';
+    const ya = _bibYaEnBanco(nombre, e.grupo);
     const img = e.imagen ? '<img src="' + e.imagen + '" loading="lazy" alt="" onerror="this.style.display=\'none\'">' : '';
     return '<div class="bib-card">' + img +
       '<div class="bib-body">' +
-        '<div class="bib-nombre">' + e.nombre + '</div>' +
+        '<div class="bib-nombre">' + nombre + '</div>' +
         '<div class="bib-tags"><span class="bib-tag">' + e.grupo + '</span>' +
           '<span class="bib-tag n-' + e.nivel + '">' + e.nivel + '</span>' +
           '<span class="bib-tag">' + (e.equipo || '') + '</span></div>' +
-        '<div class="bib-instr">' + (e.instrucciones || '').slice(0, 160) + '</div>' +
+        '<div class="bib-instr">' + instr.slice(0, 160) + '</div>' +
         '<button class="bib-add' + (ya ? ' added' : '') + '" ' + (ya ? 'disabled' : '') +
           ' onclick="agregarDesdeBiblioteca(this,\'' + e.id + '\')">' +
           (ya ? '✓ Ya está en tu banco' : '➕ Agregar a mi banco') + '</button>' +
@@ -711,17 +715,19 @@ function renderBiblioteca() {
 function agregarDesdeBiblioteca(btn, id) {
   const e = _biblioteca.find(x => x.id === id);
   if (!e) return;
+  const nombre = e.nombre_es || e.nombre;                        // usar el español
+  const instr = e.instrucciones_es || e.instrucciones || '';
   // 1) Sumar el nombre al banco del grupo correspondiente (hv_banco_extra)
   const extra = JSON.parse(localStorage.getItem('hv_banco_extra') || '{}');
   if (!extra[e.grupo]) extra[e.grupo] = [];
-  if (!extra[e.grupo].includes(e.nombre)) extra[e.grupo].push(e.nombre);
+  if (!extra[e.grupo].includes(nombre)) extra[e.grupo].push(nombre);
   localStorage.setItem('hv_banco_extra', JSON.stringify(extra));
   // 2) Guardar sus instrucciones como detalle (para verlas en la ficha del ejercicio)
   const det = JSON.parse(localStorage.getItem('hv_ejercicio_detalle') || '{}');
-  det[e.nombre] = { descripcion: e.instrucciones || '', youtube: '', imagen: e.imagen || '' };
+  det[nombre] = { descripcion: instr, youtube: '', imagen: e.imagen || '' };
   localStorage.setItem('hv_ejercicio_detalle', JSON.stringify(det));
   btn.className = 'bib-add added'; btn.disabled = true; btn.textContent = '✓ Agregado a ' + e.grupo;
-  toast('✓ ' + e.nombre + ' agregado a ' + e.grupo);
+  toast('✓ ' + nombre + ' agregado a ' + e.grupo);
 }
 
 function getBancoEfectivo(key) {

@@ -3,10 +3,17 @@
  * import_biblioteca.js — Baja el dataset free-exercise-db (dominio público),
  * filtra SOLO los ejercicios funcionales que sirven para el gimnasio de hockey,
  * mapea nivel (beginner/intermediate/expert → Iniciado/Intermedio/Avanzado) y
- * grupo muscular (Core/Upper/Lower/Full Body), y escribe public/biblioteca.json.
+ * grupo muscular (Core/Upper/Lower/Full Body), TRADUCE nombre e instrucciones
+ * al español con la API de Claude, y escribe public/biblioteca.json.
  *
  * Correr donde haya internet (tu compu o el server):
- *     node import_biblioteca.js
+ *     ANTHROPIC_API_KEY=sk-... node import_biblioteca.js
+ *
+ * (En Windows PowerShell:  $env:ANTHROPIC_API_KEY="sk-..."; node import_biblioteca.js)
+ *
+ * Si NO pasás la API key, igual funciona: baja y filtra en inglés, y las
+ * etiquetas (equipo/categoría) quedan traducidas por diccionario. Después podés
+ * correrlo de nuevo con la key para traducir todo.
  *
  * No pisa tu banco de hockey: solo genera la "biblioteca" de genéricos aparte.
  * Fuente: https://github.com/yuhonas/free-exercise-db (Unlicense, dominio público)
@@ -17,6 +24,7 @@ const path = require('path');
 const FUENTE = 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/dist/exercises.json';
 const RAW_IMG = 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/';
 const SALIDA = path.join(__dirname, 'public', 'biblioteca.json');
+const API_KEY = process.env.ANTHROPIC_API_KEY || null;
 
 const EQUIP_OK = new Set(['body only', 'kettlebells', 'bands', 'medicine ball', 'exercise ball', 'foam roll', 'dumbbell']);
 const EQUIP_NO = new Set(['barbell', 'machine', 'cable', 'e-z curl bar']);
@@ -24,6 +32,16 @@ const LOWER = new Set(['quadriceps', 'hamstrings', 'glutes', 'calves', 'adductor
 const UPPER = new Set(['chest', 'shoulders', 'triceps', 'biceps', 'forearms', 'lats', 'middle back', 'traps', 'neck']);
 const CORE  = new Set(['abdominals', 'lower back']);
 const NIVEL = { beginner: 'Iniciado', intermediate: 'Intermedio', expert: 'Avanzado' };
+// Etiquetas al español (vocabulario cerrado, siempre traducidas)
+const EQUIPO_ES = {
+  'body only': 'peso corporal', 'kettlebells': 'pesa rusa', 'bands': 'banda elástica',
+  'medicine ball': 'pelota medicinal', 'exercise ball': 'pelota de ejercicio',
+  'foam roll': 'rodillo', 'dumbbell': 'mancuerna', 'other': 'otro', 'none': '—',
+};
+const CATEGORIA_ES = {
+  strength: 'fuerza', stretching: 'movilidad', plyometrics: 'pliometría',
+  cardio: 'cardio', powerlifting: 'powerlifting', strongman: 'strongman',
+};
 
 function grupo(ex) {
   const prims = ex.primaryMuscles || [];
@@ -48,6 +66,30 @@ function esFuncional(ex) {
   return false;
 }
 
+// Traduce un lote de ejercicios con Claude (Haiku). Devuelve [{nombre_es, instrucciones_es}]
+async function traducirLote(lote) {
+  const items = lote.map((e, i) => `${i}. NOMBRE: ${e.nombre}\nINSTRUCCIONES: ${e.instrucciones}`).join('\n\n');
+  const prompt = `Sos traductor de fitness. Traducí al español rioplatense (Argentina) estos ejercicios. Devolvé SOLO un array JSON válido, sin texto extra, con el formato [{"i":0,"nombre_es":"...","instrucciones_es":"..."}]. Mantené términos técnicos claros y naturales para un profe de gimnasio.\n\n${items}`;
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'x-api-key': API_KEY,
+      'anthropic-version': '2023-06-01',
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 4096,
+      messages: [{ role: 'user', content: prompt }],
+    }),
+  });
+  if (!res.ok) throw new Error('API ' + res.status + ': ' + (await res.text()).slice(0, 200));
+  const data = await res.json();
+  let txt = data.content[0].text.trim();
+  const a = txt.indexOf('['), b = txt.lastIndexOf(']');
+  return JSON.parse(txt.slice(a, b + 1));
+}
+
 (async () => {
   console.log('Descargando dataset...');
   const res = await fetch(FUENTE);
@@ -58,19 +100,39 @@ function esFuncional(ex) {
   const bib = data.filter(esFuncional).map(ex => ({
     id: ex.id,
     nombre: ex.name,
+    nombre_es: null,
     grupo: grupo(ex),
     nivel: NIVEL[ex.level] || 'Intermedio',
-    equipo: ex.equipment || 'peso corporal',
-    categoria: ex.category,
+    equipo: EQUIPO_ES[ex.equipment] || ex.equipment || 'peso corporal',
+    categoria: CATEGORIA_ES[ex.category] || ex.category,
     instrucciones: (ex.instructions || []).join(' '),
+    instrucciones_es: null,
     imagen: ex.images && ex.images.length ? RAW_IMG + ex.images[0] : null,
   }));
+  console.log('Funcionales filtrados:', bib.length);
+
+  if (API_KEY) {
+    console.log('Traduciendo al español con Claude (en lotes)...');
+    const LOTE = 15;
+    for (let i = 0; i < bib.length; i += LOTE) {
+      const lote = bib.slice(i, i + LOTE);
+      try {
+        const tr = await traducirLote(lote);
+        for (const t of tr) {
+          const e = lote[t.i];
+          if (e) { e.nombre_es = t.nombre_es || null; e.instrucciones_es = t.instrucciones_es || null; }
+        }
+        console.log(`  traducidos ${Math.min(i + LOTE, bib.length)}/${bib.length}`);
+      } catch (err) {
+        console.warn(`  ⚠️ lote ${i} falló (${err.message}) — queda en inglés, reintentá luego`);
+      }
+    }
+  } else {
+    console.log('Sin ANTHROPIC_API_KEY: nombres e instrucciones quedan en inglés (etiquetas sí en español).');
+  }
 
   fs.writeFileSync(SALIDA, JSON.stringify(bib, null, 1));
-  const porGrupo = bib.reduce((a, b) => (a[b.grupo] = (a[b.grupo] || 0) + 1, a), {});
-  const porNivel = bib.reduce((a, b) => (a[b.nivel] = (a[b.nivel] || 0) + 1, a), {});
-  console.log('\n✅ biblioteca.json generado:', bib.length, 'ejercicios funcionales');
-  console.log('   Por grupo:', porGrupo);
-  console.log('   Por nivel:', porNivel);
+  const conES = bib.filter(b => b.nombre_es).length;
+  console.log(`\n✅ biblioteca.json: ${bib.length} ejercicios (${conES} traducidos al español)`);
   console.log('   Guardado en:', SALIDA);
 })();
