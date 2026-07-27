@@ -157,6 +157,24 @@ td.editing input { width: 100%; border: none; outline: 2px solid var(--verde); p
 /* Área de impresión */
 #print-area { display: none; }
 
+/* ─── Biblioteca ─── */
+.bib-filtros { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px; }
+.bib-filtros input, .bib-filtros select { padding:8px 10px; border:1px solid #d1d5db; border-radius:8px; font-size:13px; }
+.bib-filtros input { flex:1; min-width:140px; }
+#bib-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:12px; max-height:60vh; overflow-y:auto; }
+.bib-card { border:1px solid #e5e7eb; border-radius:10px; overflow:hidden; display:flex; flex-direction:column; background:#fff; }
+.bib-card img { width:100%; height:150px; object-fit:cover; background:#f3f4f6; }
+.bib-card .bib-body { padding:8px 10px; display:flex; flex-direction:column; gap:5px; flex:1; }
+.bib-card .bib-nombre { font-weight:600; font-size:13px; line-height:1.2; }
+.bib-card .bib-tags { display:flex; gap:4px; flex-wrap:wrap; }
+.bib-tag { font-size:10px; padding:1px 7px; border-radius:10px; background:#eef2ff; color:#3730a3; }
+.bib-tag.n-Iniciado { background:#ecfdf5; color:#065f46; }
+.bib-tag.n-Intermedio { background:#fffbeb; color:#92400e; }
+.bib-tag.n-Avanzado { background:#fef2f2; color:#991b1b; }
+.bib-card .bib-instr { font-size:11px; color:#6b7280; line-height:1.35; max-height:52px; overflow:hidden; }
+.bib-card .bib-add { margin-top:auto; border:none; background:#166534; color:#fff; padding:7px; font-size:12px; font-weight:600; cursor:pointer; }
+.bib-card .bib-add.added { background:#9ca3af; cursor:default; }
+
 /* ─── Intenciones por nivel ─── */
 .ej-nombre { font-weight: 500; }
 .ints { margin-top: 4px; display: flex; flex-direction: column; gap: 2px; font-size: 10px; line-height: 1.35; }
@@ -212,6 +230,7 @@ td.editing input { width: 100%; border: none; outline: 2px solid var(--verde); p
   </div>
   <div class="header-right">
     <button class="hist-btn" onclick="abrirBanco()">⚙️ Banco</button>
+    <button class="hist-btn" onclick="abrirBiblioteca()">📚 Biblioteca</button>
     <button class="hist-btn" onclick="abrirHistorial()">📂 Planes guardados</button>
   </div>
 </header>
@@ -239,6 +258,27 @@ td.editing input { width: 100%; border: none; outline: 2px solid var(--verde); p
     <h2>⚙️ Banco de ejercicios</h2>
     <div class="banco-tabs" id="banco-tabs"></div>
     <div id="banco-contenido"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-biblioteca">
+  <div class="modal" style="max-width:820px;">
+    <button class="modal-close" onclick="cerrarBiblioteca()">✕</button>
+    <h2>📚 Biblioteca de ejercicios funcionales</h2>
+    <p style="font-size:12px;color:#6b7280;margin:-6px 0 12px">Genéricos de referencia (dominio público). No mezclan con tu banco: agregá a mano los que te sirvan.</p>
+    <div class="bib-filtros">
+      <input type="text" id="bib-buscar" placeholder="Buscar..." oninput="renderBiblioteca()">
+      <select id="bib-grupo" onchange="renderBiblioteca()">
+        <option value="">Todos los grupos</option>
+        <option>Core</option><option>Upper</option><option>Lower</option><option>Full Body</option>
+      </select>
+      <select id="bib-nivel" onchange="renderBiblioteca()">
+        <option value="">Todos los niveles</option>
+        <option>Iniciado</option><option>Intermedio</option><option>Avanzado</option>
+      </select>
+    </div>
+    <div id="bib-conteo" style="font-size:12px;color:#6b7280;margin-bottom:8px"></div>
+    <div id="bib-grid"></div>
   </div>
 </div>
 
@@ -612,6 +652,78 @@ function rnd(arr, n) {
 
 // Retorna el banco efectivo: base + extras localStorage - eliminados localStorage
 // hv_banco_eliminados es un objeto { key: [nombres] } (por banco)
+// ─── BIBLIOTECA DE EJERCICIOS FUNCIONALES (dataset dominio público) ──────────
+let _biblioteca = null;
+
+async function abrirBiblioteca() {
+  document.getElementById('modal-biblioteca').classList.add('open');
+  const grid = document.getElementById('bib-grid');
+  if (_biblioteca === null) {
+    grid.innerHTML = '<p style="color:#6b7280">Cargando biblioteca...</p>';
+    try {
+      const r = await fetch('biblioteca.json');
+      if (!r.ok) throw new Error('no se encontró biblioteca.json');
+      _biblioteca = await r.json();
+    } catch (e) {
+      _biblioteca = [];
+      grid.innerHTML = '<p style="color:#b91c1c">No se pudo cargar la biblioteca. ¿Corriste <b>node import_biblioteca.js</b>?</p>';
+      return;
+    }
+  }
+  renderBiblioteca();
+}
+function cerrarBiblioteca() { document.getElementById('modal-biblioteca').classList.remove('open'); }
+
+function _bibYaEnBanco(nombre, grupo) {
+  const extra = JSON.parse(localStorage.getItem('hv_banco_extra') || '{}');
+  return (extra[grupo] || []).includes(nombre);
+}
+
+function renderBiblioteca() {
+  if (!_biblioteca) return;
+  const q = (document.getElementById('bib-buscar').value || '').toLowerCase().trim();
+  const fg = document.getElementById('bib-grupo').value;
+  const fn = document.getElementById('bib-nivel').value;
+  const lista = _biblioteca.filter(e =>
+    (!fg || e.grupo === fg) && (!fn || e.nivel === fn) &&
+    (!q || e.nombre.toLowerCase().includes(q) || (e.equipo || '').toLowerCase().includes(q)));
+  document.getElementById('bib-conteo').textContent =
+    lista.length + ' de ' + _biblioteca.length + ' ejercicios';
+  const grid = document.getElementById('bib-grid');
+  if (!lista.length) { grid.innerHTML = '<p style="color:#6b7280">Sin resultados con esos filtros.</p>'; return; }
+  grid.innerHTML = lista.map(e => {
+    const ya = _bibYaEnBanco(e.nombre, e.grupo);
+    const img = e.imagen ? '<img src="' + e.imagen + '" loading="lazy" alt="" onerror="this.style.display=\'none\'">' : '';
+    return '<div class="bib-card">' + img +
+      '<div class="bib-body">' +
+        '<div class="bib-nombre">' + e.nombre + '</div>' +
+        '<div class="bib-tags"><span class="bib-tag">' + e.grupo + '</span>' +
+          '<span class="bib-tag n-' + e.nivel + '">' + e.nivel + '</span>' +
+          '<span class="bib-tag">' + (e.equipo || '') + '</span></div>' +
+        '<div class="bib-instr">' + (e.instrucciones || '').slice(0, 160) + '</div>' +
+        '<button class="bib-add' + (ya ? ' added' : '') + '" ' + (ya ? 'disabled' : '') +
+          ' onclick="agregarDesdeBiblioteca(this,\'' + e.id + '\')">' +
+          (ya ? '✓ Ya está en tu banco' : '➕ Agregar a mi banco') + '</button>' +
+      '</div></div>';
+  }).join('');
+}
+
+function agregarDesdeBiblioteca(btn, id) {
+  const e = _biblioteca.find(x => x.id === id);
+  if (!e) return;
+  // 1) Sumar el nombre al banco del grupo correspondiente (hv_banco_extra)
+  const extra = JSON.parse(localStorage.getItem('hv_banco_extra') || '{}');
+  if (!extra[e.grupo]) extra[e.grupo] = [];
+  if (!extra[e.grupo].includes(e.nombre)) extra[e.grupo].push(e.nombre);
+  localStorage.setItem('hv_banco_extra', JSON.stringify(extra));
+  // 2) Guardar sus instrucciones como detalle (para verlas en la ficha del ejercicio)
+  const det = JSON.parse(localStorage.getItem('hv_ejercicio_detalle') || '{}');
+  det[e.nombre] = { descripcion: e.instrucciones || '', youtube: '', imagen: e.imagen || '' };
+  localStorage.setItem('hv_ejercicio_detalle', JSON.stringify(det));
+  btn.className = 'bib-add added'; btn.disabled = true; btn.textContent = '✓ Agregado a ' + e.grupo;
+  toast('✓ ' + e.nombre + ' agregado a ' + e.grupo);
+}
+
 function getBancoEfectivo(key) {
   const eliminadosRaw = JSON.parse(localStorage.getItem("hv_banco_eliminados") || "{}");
   // Compatibilidad con formato viejo (array global): ignorarlo
@@ -1345,6 +1457,9 @@ document.getElementById("modal-banco").addEventListener("click", e => {
 });
 document.getElementById("modal-detalle").addEventListener("click", e => {
   if (e.target === document.getElementById("modal-detalle")) cerrarDetalle();
+});
+document.getElementById("modal-biblioteca").addEventListener("click", e => {
+  if (e.target === document.getElementById("modal-biblioteca")) cerrarBiblioteca();
 });
 document.addEventListener("click", e => {
   const panel = document.getElementById("ejercicio-dropdown");
