@@ -24,7 +24,22 @@ const path = require('path');
 const FUENTE = 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/dist/exercises.json';
 const RAW_IMG = 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/';
 const SALIDA = path.join(__dirname, 'public', 'biblioteca.json');
-const API_KEY = process.env.ANTHROPIC_API_KEY || null;
+const MODELO = process.env.ANTHROPIC_MODEL || 'claude-haiku-4-5-20251001';
+
+// La API key puede venir de: (1) argumento en la línea de comando (lo más fácil),
+// (2) variable de entorno ANTHROPIC_API_KEY, (3) archivo .env con ANTHROPIC_API_KEY=...
+function resolverApiKey() {
+  const arg = process.argv.find(a => a.startsWith('sk-'));
+  if (arg) return arg.trim();
+  if (process.env.ANTHROPIC_API_KEY) return process.env.ANTHROPIC_API_KEY.trim();
+  try {
+    const env = fs.readFileSync(path.join(__dirname, '.env'), 'utf-8');
+    const m = env.match(/ANTHROPIC_API_KEY\s*=\s*["']?([^"'\r\n]+)/);
+    if (m) return m[1].trim();
+  } catch {}
+  return null;
+}
+const API_KEY = resolverApiKey();
 
 const EQUIP_OK = new Set(['body only', 'kettlebells', 'bands', 'medicine ball', 'exercise ball', 'foam roll', 'dumbbell']);
 const EQUIP_NO = new Set(['barbell', 'machine', 'cable', 'e-z curl bar']);
@@ -78,12 +93,12 @@ async function traducirLote(lote) {
       'content-type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 4096,
+      model: MODELO,
+      max_tokens: 8192,
       messages: [{ role: 'user', content: prompt }],
     }),
   });
-  if (!res.ok) throw new Error('API ' + res.status + ': ' + (await res.text()).slice(0, 200));
+  if (!res.ok) throw new Error('API ' + res.status + ': ' + (await res.text()).slice(0, 300));
   const data = await res.json();
   let txt = data.content[0].text.trim();
   const a = txt.indexOf('['), b = txt.lastIndexOf(']');
@@ -112,23 +127,38 @@ async function traducirLote(lote) {
   console.log('Funcionales filtrados:', bib.length);
 
   if (API_KEY) {
-    console.log('Traduciendo al español con Claude (en lotes)...');
-    const LOTE = 15;
+    console.log('🔑 API key detectada (termina en ...' + API_KEY.slice(-6) + '). Modelo:', MODELO);
+    // Prueba con 1 ejercicio: si la API falla, cortamos acá con el error REAL
+    // en vez de generar un archivo sin traducir "en silencio".
+    console.log('Probando la API con 1 ejercicio...');
+    try {
+      const test = await traducirLote([bib[0]]);
+      console.log('   ✅ Prueba OK →', test[0] && test[0].nombre_es);
+    } catch (err) {
+      console.error('\n❌ La API falló:', err.message);
+      console.error('   No traduje nada. Revisá la key o el modelo y reintentá.');
+      console.error('   (Podés forzar otro modelo con:  $env:ANTHROPIC_MODEL="claude-3-5-haiku-latest")');
+      process.exit(1);
+    }
+    console.log('Traduciendo al español con Claude (en lotes de 8)...');
+    const LOTE = 8;
     for (let i = 0; i < bib.length; i += LOTE) {
       const lote = bib.slice(i, i + LOTE);
       try {
         const tr = await traducirLote(lote);
         for (const t of tr) {
           const e = lote[t.i];
-          if (e) { e.nombre_es = t.nombre_es || null; e.instrucciones_es = t.instrucciones_es || null; }
+          if (e) { e.nombre_es = t.nombre_es || e.nombre_es; e.instrucciones_es = t.instrucciones_es || null; }
         }
         console.log(`  traducidos ${Math.min(i + LOTE, bib.length)}/${bib.length}`);
       } catch (err) {
-        console.warn(`  ⚠️ lote ${i} falló (${err.message}) — queda en inglés, reintentá luego`);
+        console.warn(`  ⚠️ lote ${i}-${i + LOTE} falló (${err.message}) — quedan en inglés`);
       }
     }
   } else {
-    console.log('Sin ANTHROPIC_API_KEY: nombres e instrucciones quedan en inglés (etiquetas sí en español).');
+    console.log('\n⚠️  NO se encontró la API key — nada se tradujo.');
+    console.log('   Corré así (poné tu key de Claude directo):');
+    console.log('     node import_biblioteca.js sk-ant-TU-KEY-ACA\n');
   }
 
   fs.writeFileSync(SALIDA, JSON.stringify(bib, null, 1));
