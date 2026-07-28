@@ -171,7 +171,10 @@ td.editing input { width: 100%; border: none; outline: 2px solid var(--verde); p
 .bib-tag.n-Iniciado { background:#ecfdf5; color:#065f46; }
 .bib-tag.n-Intermedio { background:#fffbeb; color:#92400e; }
 .bib-tag.n-Avanzado { background:#fef2f2; color:#991b1b; }
-.bib-card .bib-instr { font-size:11px; color:#6b7280; line-height:1.35; max-height:52px; overflow:hidden; }
+.bib-card .bib-instr { font-size:11px; color:#6b7280; line-height:1.4; max-height:96px; overflow-y:auto; padding-right:6px; }
+.bib-card .bib-instr::-webkit-scrollbar { width:6px; }
+.bib-card .bib-instr::-webkit-scrollbar-thumb { background:#cbd5e1; border-radius:3px; }
+.bib-card .bib-instr::-webkit-scrollbar-track { background:#f1f5f9; }
 .bib-card .bib-add { margin-top:auto; border:none; background:#166534; color:#fff; padding:7px; font-size:12px; font-weight:600; cursor:pointer; }
 .bib-card .bib-add.added { background:#9ca3af; cursor:default; }
 
@@ -704,7 +707,7 @@ function renderBiblioteca() {
         '<div class="bib-tags"><span class="bib-tag">' + e.grupo + '</span>' +
           '<span class="bib-tag n-' + e.nivel + '">' + e.nivel + '</span>' +
           '<span class="bib-tag">' + (e.equipo || '') + '</span></div>' +
-        '<div class="bib-instr">' + instr.slice(0, 160) + '</div>' +
+        '<div class="bib-instr">' + (instr || 'Sin instrucciones') + '</div>' +
         '<button class="bib-add' + (ya ? ' added' : '') + '" ' + (ya ? 'disabled' : '') +
           ' onclick="agregarDesdeBiblioteca(this,\'' + e.id + '\')">' +
           (ya ? '✓ Ya está en tu banco' : '➕ Agregar a mi banco') + '</button>' +
