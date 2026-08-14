@@ -55,6 +55,29 @@ app.put('/api/estado/:clave', auth, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// Diagnóstico: estado de la base de datos
+app.get('/api/health', async (req, res) => {
+  if (!pool) {
+    return res.json({
+      db_conectada: false,
+      database_url_presente: !!process.env.DATABASE_URL,
+      filas: 'sin_db',
+      claves: []
+    });
+  }
+  try {
+    const { rows } = await pool.query('SELECT clave FROM planificador_estado');
+    res.json({
+      db_conectada: true,
+      database_url_presente: true,
+      filas: rows.length,
+      claves: rows.map(r => r.clave)
+    });
+  } catch (e) {
+    res.status(500).json({ db_conectada: false, error: e.message });
+  }
+});
+
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });

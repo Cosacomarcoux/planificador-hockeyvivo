@@ -222,9 +222,14 @@ td.editing input { width: 100%; border: none; outline: 2px solid var(--verde); p
   #print-area th { font-weight: 700; background: #eee !important; text-align: center; }
   #print-area td:first-child { font-weight: 700; white-space: nowrap; }
 }
+
+/* Banner DB desconectada */
+#banner-no-db { display: none; position: fixed; top: 0; left: 0; right: 0; z-index: 1000; background: #fef3c7; color: #92400e; padding: 9px 16px; font-size: 13px; text-align: center; border-bottom: 2px solid #fcd34d; font-weight: 500; }
 </style>
 </head>
 <body>
+
+<div id="banner-no-db">⚠️ La base de datos no está conectada — los cambios se guardan solo en este dispositivo/navegador.</div>
 
 <header>
   <div>
@@ -1484,6 +1489,18 @@ const CLAVES_SYNC = ["hv_planes","hv_intenciones","hv_hist_dia","hv_banco_extra"
 const _lsSetNativo = Storage.prototype.setItem.bind(localStorage);
 const _syncTimers = {};
 
+// Retorna true si el valor tiene contenido real (no null/undefined/[]/{}):
+function _hasContent(val) {
+  if (val === null || val === undefined) return false;
+  if (Array.isArray(val)) return val.length > 0;
+  if (typeof val === 'object') return Object.keys(val).length > 0;
+  return true;
+}
+
+function _mostrarBannerNoDb() {
+  document.getElementById('banner-no-db').style.display = 'block';
+}
+
 localStorage.setItem = function (k, v) {
   _lsSetNativo(k, v);
   if (!CLAVES_SYNC.includes(k)) return;
@@ -1494,8 +1511,11 @@ localStorage.setItem = function (k, v) {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', 'x-clave': localStorage.getItem('hv_clave') || '' },
       body: JSON.stringify({ valor: JSON.parse(v) }),
-    }).then(r => { if (!r.ok && r.status !== 503) throw 0; })
-      .catch(() => toast('⚠️ Sin conexión: el cambio quedó solo en este dispositivo'));
+    }).then(r => {
+      if (r.status === 503) { _mostrarBannerNoDb(); return; }
+      if (!r.ok) throw 0;
+      toast('✓ Guardado');
+    }).catch(() => toast('⚠️ Sin conexión: el cambio quedó solo en este dispositivo'));
   }, 400);
 };
 
@@ -1511,13 +1531,30 @@ async function _bootSync() {
     }
     if (r.ok) {
       const d = await r.json();
-      if (d.estado && Object.keys(d.estado).length) {
+      if (d.sin_db) {
+        _mostrarBannerNoDb();
+      } else if (d.estado) {
+        let sincronizado = false;
         for (const k of CLAVES_SYNC) {
-          if (d.estado[k] !== undefined && d.estado[k] !== null) {
-            _lsSetNativo(k, JSON.stringify(d.estado[k]));
+          const serv = d.estado[k];
+          if (_hasContent(serv)) {
+            // El servidor tiene datos reales: piso lo local
+            _lsSetNativo(k, JSON.stringify(serv));
+            sincronizado = true;
+          } else {
+            // El servidor no tiene datos para esta clave: re-subir lo local si existe
+            let localVal = null;
+            try { const raw = localStorage.getItem(k); if (raw) localVal = JSON.parse(raw); } catch {}
+            if (_hasContent(localVal)) {
+              fetch('/api/estado/' + k, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'x-clave': clave },
+                body: JSON.stringify({ valor: localVal }),
+              }).catch(() => {});
+            }
           }
         }
-        toast('✓ Sincronizado con el servidor');
+        if (sincronizado) toast('✓ Sincronizado con el servidor');
       }
     }
   } catch (e) { console.warn('Sin servidor de sync (modo local):', e.message); }
