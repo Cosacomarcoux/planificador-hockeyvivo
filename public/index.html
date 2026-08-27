@@ -196,6 +196,7 @@ td.editing input { width: 100%; border: none; outline: 2px solid var(--verde); p
   .action-btns { flex-wrap: wrap; }
 }
 .fase-formato { background: #eef2ff; border: 1px solid #c7d2fe; color: #3730a3; border-radius: 8px; padding: 6px 10px; font-size: 12px; margin-bottom: 8px; }
+.nota-fase { background: #f0fdf4; border: 1px solid var(--verde-borde); border-radius: 8px; padding: 6px 10px; font-size: 12px; margin-bottom: 8px; color: #166534; font-style: italic; }
 
 /* Modal editor de intenciones */
 #modal-int { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 600; align-items: center; justify-content: center; }
@@ -240,6 +241,7 @@ td.editing input { width: 100%; border: none; outline: 2px solid var(--verde); p
     <button class="hist-btn" onclick="abrirBanco()">⚙️ Banco</button>
     <button class="hist-btn" onclick="abrirBiblioteca()">📚 Biblioteca</button>
     <button class="hist-btn" onclick="abrirHistorial()">📂 Planes guardados</button>
+    <button class="hist-btn" onclick="abrirConfig()">🔧 Configuración</button>
   </div>
 </header>
 
@@ -333,6 +335,31 @@ td.editing input { width: 100%; border: none; outline: 2px solid var(--verde); p
       <button onclick="cerrarEditorInt()">Cancelar</button>
       <button class="primary" onclick="guardarInt()">Guardar</button>
     </div>
+  </div>
+</div>
+
+<!-- Modal Configuración -->
+<div class="modal-overlay" id="modal-config">
+  <div class="modal" style="max-width:500px;">
+    <button class="modal-close" onclick="cerrarConfig()">✕</button>
+    <h2>🔧 Configuración</h2>
+    <h3 style="font-size:13px;font-weight:600;margin-bottom:8px;color:var(--gris)">Filas visibles en la tabla</h3>
+    <div id="config-filas-lista"></div>
+    <h3 style="font-size:13px;font-weight:600;margin:16px 0 8px;color:var(--gris)">Notas por fase</h3>
+    <div id="config-notas-fase"></div>
+  </div>
+</div>
+
+<!-- Modal Vista Revista -->
+<div class="modal-overlay" id="modal-revista">
+  <div class="modal" style="max-width:900px;width:95%;max-height:92vh;">
+    <button class="modal-close" onclick="cerrarRevista()">✕</button>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:8px">
+      <button class="action-btn" id="revista-prev" onclick="revistaNav(-1)">← Anterior</button>
+      <span id="revista-contador" style="font-size:13px;color:var(--gris);text-align:center"></span>
+      <button class="action-btn" id="revista-next" onclick="revistaNav(1)">Siguiente →</button>
+    </div>
+    <div id="revista-contenido" style="overflow-y:auto;max-height:75vh"></div>
   </div>
 </div>
 
@@ -620,6 +647,24 @@ const DIAS = ["Lunes","Martes","Miércoles","Jueves","Viernes"];
 const LABELS_FILA = ["Grupo","T.T.","Mood","Físico 1","Físico 2","Físico 3","Físico 4","Técnico 1","Técnico 2","Espacio 1","Cabina 1","Cabina 2"];
 const FILAS_AUTO = new Set(["Grupo","T.T.","Mood"]);
 
+// ─── CONFIG DE FILAS Y NOTAS POR FASE ────────────────────────────────────────
+const CONFIG_FILAS_DEFAULT = { "Grupo": true, "T.T.": true, "Mood": true, "Físico 1": true, "Físico 2": true, "Físico 3": true, "Físico 4": true, "Técnico 1": true, "Técnico 2": true, "Espacio 1": true, "Cabina 1": true, "Cabina 2": true };
+function getConfigFilas() {
+  try { const s = localStorage.getItem("hv_config_filas"); return s ? { ...CONFIG_FILAS_DEFAULT, ...JSON.parse(s) } : { ...CONFIG_FILAS_DEFAULT }; } catch { return { ...CONFIG_FILAS_DEFAULT }; }
+}
+
+const NOTAS_FASE_DEFAULT = {
+  "Fuerza":     "Trabajo de fuerza: cargas altas, pocas repeticiones, foco en la técnica y descansos completos.",
+  "Potencia":   "Trabajo de potencia: cargas medias a velocidad explosiva, priorizando la calidad del movimiento.",
+  "Pliometría": "Trabajo de pliometría: saltos y acciones reactivas, buscando elasticidad y control en la caída."
+};
+function getNotaFase(fase) {
+  if (!fase) return null;
+  const key = ["Fuerza","Potencia","Pliometría"].find(k => fase.includes(k));
+  if (!key) return null;
+  try { const s = localStorage.getItem("hv_notas_fase"); const saved = s ? JSON.parse(s) : {}; return saved[key] || NOTAS_FASE_DEFAULT[key]; } catch { return NOTAS_FASE_DEFAULT[key]; }
+}
+
 const PREGUNTAS = [
   {
     key: "semana",
@@ -843,10 +888,13 @@ function renderCeldaHTML(label, v) {
 }
 
 function renderTabla(filas) {
+  const cfg = getConfigFilas();
   let h = `<div class="plan-outer">`;
   if (estado.fase && FASES_FORMATO[estado.fase]) {
     h += `<div class="fase-formato">${FASES_FORMATO[estado.fase]}</div>`;
   }
+  const notaFase = getNotaFase(estado.fase);
+  if (notaFase) h += `<div class="nota-fase">${notaFase}</div>`;
   h += `<table><thead><tr><th class="row-header">Fila / Día</th>`;
   DIAS.forEach((d, i) => {
     h += `<th class="col-header"><span class="dia-label">${d}</span><button class="copy-dia-btn" onclick="copiarDia(${i})">📲 Copiar día</button></th>`;
@@ -854,6 +902,7 @@ function renderTabla(filas) {
   h += `</tr></thead><tbody>`;
 
   LABELS_FILA.forEach(label => {
+    if (!cfg[label]) return;
     const vals = filas[label] || ["","","","",""];
     const esAuto = FILAS_AUTO.has(label);
     h += `<tr${esAuto ? ' class="fila-auto"' : ''}><td>${label}</td>`;
@@ -996,11 +1045,15 @@ function cerrarDropdown() {
 // ─── COPIAR DÍA ──────────────────────────────────────────────────────────────
 function copiarDia(diaIdx) {
   if (!planActual) return;
+  const cfg = getConfigFilas();
   const dia = DIAS[diaIdx];
   let txt = `*🏑 Hockey Vivo – ${planActual.titulo}*\n*${dia}*\n`;
   if (estado.fase && FASES_FORMATO[estado.fase]) txt += `_${FASES_FORMATO[estado.fase]}_\n`;
+  const notaFase = getNotaFase(estado.fase);
+  if (notaFase) txt += `_${notaFase}_\n`;
   txt += `\n`;
   LABELS_FILA.forEach(label => {
+    if (!cfg[label]) return;
     const val = (planActual.filas[label] || [])[diaIdx];
     if (!val) return;
     txt += `• *${label}:* ${val}\n`;
@@ -1016,8 +1069,11 @@ function copiarDia(diaIdx) {
 // ─── COPIAR TODO ─────────────────────────────────────────────────────────────
 function copiarTablaCompleta() {
   if (!planActual) return;
-  let txt = `*🏑 ${planActual.titulo}*\nFoco: ${estado.foco}\n\n`;
+  const cfg = getConfigFilas();
+  const rangoStr = planActual.rangoFechas ? ` · ${planActual.rangoFechas}` : "";
+  let txt = `*🏑 ${planActual.titulo}${rangoStr}*\nFoco: ${estado.foco}\n\n`;
   LABELS_FILA.forEach(label => {
+    if (!cfg[label]) return;
     txt += `*${label}:*\n`;
     DIAS.forEach((d, i) => {
       const v = (planActual.filas[label] || [])[i];
@@ -1035,12 +1091,15 @@ function guardarPlan() {
   const id = Date.now();
   planes.unshift({
     id,
-    titulo: planActual.titulo,
-    fecha:  planActual.fecha,
-    semana: estado.semana,
-    fase:   estado.fase,
-    foco:   estado.foco,
-    filas:  planActual.filas
+    titulo:      planActual.titulo,
+    fecha:       planActual.fecha,
+    fechaInicio: planActual.fechaInicio || null,
+    fechaFin:    planActual.fechaFin    || null,
+    rangoFechas: planActual.rangoFechas || null,
+    semana:      estado.semana,
+    fase:        estado.fase,
+    foco:        estado.foco,
+    filas:       planActual.filas
   });
   localStorage.setItem("hv_planes", JSON.stringify(planes));
   // Registrar en la memoria anti-repetición: estos ejercicios no volverán a
@@ -1051,29 +1110,210 @@ function guardarPlan() {
 
 // ─── HISTORIAL ───────────────────────────────────────────────────────────────
 function abrirHistorial() {
+  document.getElementById("modal-hist").classList.add("open");
+  _renderHistorialContenido("", "");
+}
+
+function _renderHistorialContenido(desdeVal, hastaVal) {
   const planes = JSON.parse(localStorage.getItem("hv_planes") || "[]");
   const lista  = document.getElementById("hist-lista");
-  if (!planes.length) {
-    lista.innerHTML = `<div class="empty-hist">Todavía no guardaste ningún plan.<br>Generá uno y tocá "Guardar plan".</div>`;
-  } else {
-    lista.innerHTML = planes.map(p => `
-      <div class="hist-item" id="hist-${p.id}">
-        <div class="hist-item-info">
-          <strong>${p.titulo}</strong>
-          <span>${p.fecha} · Foco: ${p.foco}</span>
-        </div>
-        <div class="hist-item-btns">
-          <button class="hist-load" onclick="cargarPlan(${p.id})">Cargar</button>
-          <button class="hist-del"  onclick="borrarPlan(${p.id})">✕</button>
-        </div>
-      </div>`).join("");
+  lista.innerHTML = `
+    <div style="margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--verde-borde)">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
+        <label style="font-size:12px">Desde: <input type="date" id="hist-filtro-desde" value="${desdeVal}"></label>
+        <label style="font-size:12px">Hasta: <input type="date" id="hist-filtro-hasta" value="${hastaVal}"></label>
+        <button onclick="_aplicarFiltroHistorial()" class="hist-load">Filtrar</button>
+        <button onclick="_limpiarFiltroHistorial()" class="hist-load">✕ Limpiar</button>
+      </div>
+      <button class="action-btn" onclick="abrirVistaRevista()" style="font-size:12px;padding:6px 12px">📖 Vista revista</button>
+    </div>
+    <div id="hist-planes-lista"></div>`;
+  _renderListaPlanes(planes, desdeVal, hastaVal);
+}
+
+function _renderListaPlanes(planes, desde, hasta) {
+  let filtrados = planes;
+  if (desde || hasta) {
+    filtrados = planes.filter(p => {
+      if (!p.fechaInicio && !p.fechaFin) return true;
+      if (desde && p.fechaFin && p.fechaFin < desde) return false;
+      if (hasta && p.fechaInicio && p.fechaInicio > hasta) return false;
+      return true;
+    });
   }
-  document.getElementById("modal-hist").classList.add("open");
+  const div = document.getElementById("hist-planes-lista");
+  if (!div) return;
+  if (!filtrados.length) {
+    div.innerHTML = `<div class="empty-hist">${desde||hasta ? 'No hay planes en ese rango de fechas.' : 'Todavía no guardaste ningún plan.<br>Generá uno y tocá "Guardar plan".'}</div>`;
+    return;
+  }
+  div.innerHTML = filtrados.map(p => {
+    const rango = p.rangoFechas ? ` · ${p.rangoFechas}` : "";
+    return `<div class="hist-item" id="hist-${p.id}">
+      <div class="hist-item-info">
+        <strong>${p.titulo}${rango}</strong>
+        <span>${p.fecha} · Foco: ${p.foco}</span>
+      </div>
+      <div class="hist-item-btns">
+        <button class="hist-load" onclick="cargarPlan(${p.id})">Cargar</button>
+        <button class="hist-del"  onclick="borrarPlan(${p.id})">✕</button>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+function _aplicarFiltroHistorial() {
+  const desde = document.getElementById("hist-filtro-desde")?.value || "";
+  const hasta  = document.getElementById("hist-filtro-hasta")?.value || "";
+  const planes = JSON.parse(localStorage.getItem("hv_planes") || "[]");
+  _renderListaPlanes(planes, desde, hasta);
+}
+
+function _limpiarFiltroHistorial() {
+  const planes = JSON.parse(localStorage.getItem("hv_planes") || "[]");
+  _renderListaPlanes(planes, "", "");
+  const d = document.getElementById("hist-filtro-desde"); if (d) d.value = "";
+  const h = document.getElementById("hist-filtro-hasta"); if (h) h.value = "";
 }
 
 function cerrarHistorial() {
   document.getElementById("modal-hist").classList.remove("open");
 }
+
+// ─── VISTA REVISTA ────────────────────────────────────────────────────────────
+let _revistaPlanesActuales = [];
+let _revistaIdx = 0;
+
+function abrirVistaRevista() {
+  let planes = JSON.parse(localStorage.getItem("hv_planes") || "[]");
+  const desde = document.getElementById("hist-filtro-desde")?.value || "";
+  const hasta  = document.getElementById("hist-filtro-hasta")?.value || "";
+  if (desde || hasta) {
+    planes = planes.filter(p => {
+      if (!p.fechaInicio && !p.fechaFin) return true;
+      if (desde && p.fechaFin && p.fechaFin < desde) return false;
+      if (hasta && p.fechaInicio && p.fechaInicio > hasta) return false;
+      return true;
+    });
+  }
+  planes.sort((a, b) => {
+    if (!a.fechaInicio && !b.fechaInicio) return 0;
+    if (!a.fechaInicio) return 1;
+    if (!b.fechaInicio) return -1;
+    return a.fechaInicio.localeCompare(b.fechaInicio);
+  });
+  if (!planes.length) { toast("No hay planes para mostrar en vista revista"); return; }
+  _revistaPlanesActuales = planes;
+  _revistaIdx = 0;
+  document.getElementById("modal-revista").classList.add("open");
+  _renderRevistaPlan();
+}
+
+function cerrarRevista() {
+  document.getElementById("modal-revista").classList.remove("open");
+}
+
+function revistaNav(dir) {
+  _revistaIdx = Math.max(0, Math.min(_revistaPlanesActuales.length - 1, _revistaIdx + dir));
+  _renderRevistaPlan();
+}
+
+function _renderRevistaPlan() {
+  const p = _revistaPlanesActuales[_revistaIdx];
+  const total = _revistaPlanesActuales.length;
+  document.getElementById("revista-contador").textContent = `${_revistaIdx + 1} de ${total}`;
+  document.getElementById("revista-prev").disabled = (_revistaIdx === 0);
+  document.getElementById("revista-next").disabled = (_revistaIdx === total - 1);
+  const rangoStr = p.rangoFechas ? ` · ${p.rangoFechas}` : "";
+  const faseKey  = p.fase ? ["Fuerza","Potencia","Pliometría"].find(k => p.fase.includes(k)) : null;
+  const notas    = JSON.parse(localStorage.getItem("hv_notas_fase") || "{}");
+  const notaFase = faseKey ? (notas[faseKey] || NOTAS_FASE_DEFAULT[faseKey]) : null;
+  let html = `<h3 style="font-size:1rem;font-weight:700;margin-bottom:4px">${p.titulo}${rangoStr}</h3>`;
+  html += `<p style="font-size:12px;color:var(--gris);margin-bottom:10px">${p.fecha}${p.foco ? ' · Foco: ' + p.foco : ''}</p>`;
+  if (p.fase && FASES_FORMATO[p.fase]) html += `<div class="fase-formato">${FASES_FORMATO[p.fase]}</div>`;
+  if (notaFase) html += `<div class="nota-fase">${notaFase}</div>`;
+  html += _renderTablaReadOnly(p.filas);
+  document.getElementById("revista-contenido").innerHTML = html;
+}
+
+function _renderTablaReadOnly(filas) {
+  const cfg = getConfigFilas();
+  let h = `<div class="plan-outer"><table><thead><tr><th class="row-header">Fila / Día</th>`;
+  DIAS.forEach(d => { h += `<th class="col-header"><span class="dia-label">${d}</span></th>`; });
+  h += `</tr></thead><tbody>`;
+  LABELS_FILA.forEach(label => {
+    if (!cfg[label]) return;
+    const vals = filas[label] || ["","","","",""];
+    const esAuto = FILAS_AUTO.has(label);
+    h += `<tr${esAuto ? ' class="fila-auto"' : ''}><td>${label}</td>`;
+    vals.forEach(v => {
+      if (esAuto) { h += `<td>${v}</td>`; }
+      else {
+        const tipo = _tipoIntFila(label);
+        if (tipo && _verInts() && v) {
+          const it = getIntenciones(v, tipo);
+          h += `<td><div class="ej-nombre">${v}</div><div class="ints"><div class="int int-i"><b>Ini:</b> ${it.i}</div><div class="int int-m"><b>Int:</b> ${it.m}</div><div class="int int-a"><b>Avz:</b> ${it.a}</div></div></td>`;
+        } else { h += `<td>${v||""}</td>`; }
+      }
+    });
+    h += `</tr>`;
+  });
+  h += `</tbody></table></div>`;
+  return h;
+}
+
+// ─── PANEL DE CONFIGURACIÓN ──────────────────────────────────────────────────
+function abrirConfig() {
+  _renderConfigFilas();
+  _renderConfigNotas();
+  document.getElementById("modal-config").classList.add("open");
+}
+
+function cerrarConfig() {
+  document.getElementById("modal-config").classList.remove("open");
+}
+
+function _renderConfigFilas() {
+  const cfg = getConfigFilas();
+  const html = LABELS_FILA.map(label => `
+    <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #f0f4f2">
+      <input type="checkbox" id="cfg-fila-${label.replace(/\s/g,'_')}" ${cfg[label] !== false ? 'checked' : ''} onchange="toggleConfigFila('${label}', this.checked)">
+      <label for="cfg-fila-${label.replace(/\s/g,'_')}" style="font-size:13px;cursor:pointer">${label}</label>
+    </div>`).join("");
+  document.getElementById("config-filas-lista").innerHTML = html;
+}
+
+function toggleConfigFila(label, checked) {
+  const cfg = getConfigFilas();
+  cfg[label] = checked;
+  localStorage.setItem("hv_config_filas", JSON.stringify(cfg));
+  _rerenderUltimaTabla();
+}
+
+function _renderConfigNotas() {
+  const saved = JSON.parse(localStorage.getItem("hv_notas_fase") || "{}");
+  const fases = ["Fuerza","Potencia","Pliometría"];
+  const html = fases.map(f => `
+    <div style="margin-bottom:12px">
+      <label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px;color:var(--verde)">${f}</label>
+      <textarea id="cfg-nota-${f}" style="width:100%;border:1px solid var(--verde-borde);border-radius:6px;padding:7px;font-size:12px;font-family:inherit;resize:vertical;min-height:58px" rows="3">${_attrText(saved[f] || NOTAS_FASE_DEFAULT[f])}</textarea>
+    </div>`).join("");
+  document.getElementById("config-notas-fase").innerHTML = html +
+    `<button class="action-btn primary" onclick="guardarNotasFase()" style="font-size:13px">Guardar notas</button>`;
+}
+
+function guardarNotasFase() {
+  const saved = JSON.parse(localStorage.getItem("hv_notas_fase") || "{}");
+  ["Fuerza","Potencia","Pliometría"].forEach(f => {
+    const el = document.getElementById(`cfg-nota-${f}`);
+    if (el && el.value.trim()) saved[f] = el.value.trim();
+  });
+  localStorage.setItem("hv_notas_fase", JSON.stringify(saved));
+  toast("✓ Notas por fase guardadas");
+  _rerenderUltimaTabla();
+}
+
+function _attrText(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 function cargarPlan(id) {
   const planes = JSON.parse(localStorage.getItem("hv_planes") || "[]");
@@ -1083,10 +1323,11 @@ function cargarPlan(id) {
   estado.semana = p.semana;
   estado.fase   = p.fase;
   estado.foco   = p.foco;
-  planActual = { filas: p.filas, titulo: p.titulo, fecha: p.fecha };
+  planActual = { filas: p.filas, titulo: p.titulo, fecha: p.fecha, fechaInicio: p.fechaInicio || null, fechaFin: p.fechaFin || null, rangoFechas: p.rangoFechas || null };
   const box = document.getElementById("chat-box");
   box.innerHTML = "";
-  const header = `<strong>${p.titulo}</strong> <small style="color:#6b7280">(cargado del historial)</small>`;
+  const rangoStr = p.rangoFechas ? ` · ${p.rangoFechas}` : "";
+  const header = `<strong>${p.titulo}${rangoStr}</strong> <small style="color:#6b7280">(cargado del historial)</small>`;
   addAIMsg(header + renderTabla(p.filas) + botonesAccion(), [], true);
 }
 
@@ -1220,18 +1461,44 @@ function procesarRespuesta(val) {
       const next = PREGUNTAS[estado.step];
       addAIMsg(next.texto, next.opts);
     } else {
-      addAIMsg(`¡Perfecto! Generando el plan para ${estado.semana} – ${estado.fase}...`);
-      setTimeout(() => {
-        const filas  = generarFilas();
-        const titulo = `${estado.semana} – ${estado.fase}`;
-        const fecha  = new Date().toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric" });
-        planActual   = { filas, titulo, fecha };
-        const header = `<strong>${titulo}</strong><br><small style="color:#6b7280">Foco: ${estado.foco} · ${fecha}</small><br><small style="color:#9ca3af;font-size:11px">✏️ Tocá cualquier celda (excepto las verdes) para editar</small>`;
-        addAIMsg(header + renderTabla(filas) + botonesAccion(), [], true);
-        setTimeout(() => { addAIMsg("¿Querés algo más?", ["Generar otra semana","Cambiar fase","Cambiar foco"]); }, 300);
-      }, 600);
+      mostrarFormFechas();
     }
   }, 800);
+}
+
+function mostrarFormFechas() {
+  const hoy = new Date().toISOString().slice(0, 10);
+  addAIMsg(`<p style="margin-bottom:8px">¡Perfecto! ¿Cuál es el rango de fechas de esta semana?</p>
+<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+  <label style="font-size:13px">Desde: <input type="date" id="fecha-inicio" value="${hoy}" style="margin-left:4px;border:1px solid var(--verde-borde);border-radius:6px;padding:5px 7px;font-size:13px"></label>
+  <label style="font-size:13px">Hasta: <input type="date" id="fecha-fin" value="${hoy}" style="margin-left:4px;border:1px solid var(--verde-borde);border-radius:6px;padding:5px 7px;font-size:13px"></label>
+  <button class="action-btn primary" onclick="generarConFechas()" style="padding:6px 14px;font-size:13px">Generar plan ↗</button>
+</div>`, [], true);
+}
+
+function generarConFechas() {
+  const fi = document.getElementById("fecha-inicio")?.value || "";
+  const ff = document.getElementById("fecha-fin")?.value || "";
+  const btnGen = document.querySelector('[onclick="generarConFechas()"]');
+  if (btnGen) btnGen.disabled = true;
+  addAIMsg(`Generando el plan para ${estado.semana} – ${estado.fase}...`);
+  setTimeout(() => {
+    const filas = generarFilas();
+    const titulo = `${estado.semana} – ${estado.fase}`;
+    const fecha  = new Date().toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric" });
+    let rangoFechas = "";
+    if (fi && ff) {
+      const dFi = new Date(fi + 'T00:00:00');
+      const dFf = new Date(ff + 'T00:00:00');
+      rangoFechas = dFi.toLocaleDateString("es-AR", {day:"2-digit",month:"2-digit"}) + " al " +
+                    dFf.toLocaleDateString("es-AR", {day:"2-digit",month:"2-digit",year:"numeric"});
+    }
+    planActual = { filas, titulo, fecha, fechaInicio: fi || null, fechaFin: ff || null, rangoFechas };
+    const rangoStr = rangoFechas ? ` · ${rangoFechas}` : "";
+    const header = `<strong>${titulo}${rangoStr}</strong><br><small style="color:#6b7280">Foco: ${estado.foco} · ${fecha}</small><br><small style="color:#9ca3af;font-size:11px">✏️ Tocá cualquier celda (excepto las verdes) para editar</small>`;
+    addAIMsg(header + renderTabla(filas) + botonesAccion(), [], true);
+    setTimeout(() => { addAIMsg("¿Querés algo más?", ["Generar otra semana","Cambiar fase","Cambiar foco"]); }, 300);
+  }, 600);
 }
 
 function resetChat() {
@@ -1475,6 +1742,12 @@ document.getElementById("modal-detalle").addEventListener("click", e => {
 document.getElementById("modal-biblioteca").addEventListener("click", e => {
   if (e.target === document.getElementById("modal-biblioteca")) cerrarBiblioteca();
 });
+document.getElementById("modal-config").addEventListener("click", e => {
+  if (e.target === document.getElementById("modal-config")) cerrarConfig();
+});
+document.getElementById("modal-revista").addEventListener("click", e => {
+  if (e.target === document.getElementById("modal-revista")) cerrarRevista();
+});
 document.addEventListener("click", e => {
   const panel = document.getElementById("ejercicio-dropdown");
   if (panel.style.display === "none") return;
@@ -1485,7 +1758,7 @@ document.addEventListener("click", e => {
 // El estado compartido (planes, intenciones, banco, memoria) vive en el
 // servidor. Al abrir, se descarga y pisa lo local; cada cambio local se sube
 // automáticamente. Si no hay conexión, la app sigue funcionando local.
-const CLAVES_SYNC = ["hv_planes","hv_intenciones","hv_hist_dia","hv_banco_extra","hv_banco_eliminados","hv_ejercicio_detalle"];
+const CLAVES_SYNC = ["hv_planes","hv_intenciones","hv_hist_dia","hv_banco_extra","hv_banco_eliminados","hv_ejercicio_detalle","hv_config_filas","hv_notas_fase"];
 const _lsSetNativo = Storage.prototype.setItem.bind(localStorage);
 const _syncTimers = {};
 
