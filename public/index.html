@@ -196,7 +196,7 @@ td.editing input { width: 100%; border: none; outline: 2px solid var(--verde); p
   .action-btns { flex-wrap: wrap; }
 }
 .fase-formato { background: #eef2ff; border: 1px solid #c7d2fe; color: #3730a3; border-radius: 8px; padding: 6px 10px; font-size: 12px; margin-bottom: 8px; }
-.nota-fase { background: #f0fdf4; border: 1px solid var(--verde-borde); border-radius: 8px; padding: 6px 10px; font-size: 12px; margin-bottom: 8px; color: #166534; font-style: italic; }
+.nota-fase { background: #f0fdf4; border: 1px solid var(--verde-borde); border-radius: 8px; padding: 6px 10px; font-size: 12px; margin-bottom: 8px; color: #166534; font-weight: 500; }
 
 /* Modal editor de intenciones */
 #modal-int { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 600; align-items: center; justify-content: center; }
@@ -795,9 +795,9 @@ function getConfigFilas() {
 }
 
 const NOTAS_FASE_DEFAULT = {
-  "Fuerza":     "Trabajo de fuerza: cargas altas, pocas repeticiones, foco en la técnica y descansos completos.",
-  "Potencia":   "Trabajo de potencia: cargas medias a velocidad explosiva, priorizando la calidad del movimiento.",
-  "Pliometría": "Trabajo de pliometría: saltos y acciones reactivas, buscando elasticidad y control en la caída."
+  "Fuerza":     "💪 FUERZA — ejecución controlada: 40s trabajo / 20s pausa · tempo lento en la fase excéntrica · 3-4 vueltas",
+  "Potencia":   "⚡ POTENCIA — ejecución explosiva: 20s a máxima intención / 40s pausa · pocas reps de calidad · 3-4 vueltas",
+  "Pliometría": "🦘 PLIOMETRÍA — saltos y rebotes: 15-20s trabajo / recuperación completa (60-90s) · contactos de calidad, frenar si se degrada"
 };
 function getNotaFase(fase) {
   if (!fase) return null;
@@ -1031,11 +1031,6 @@ function renderCeldaHTML(label, v) {
 function renderTabla(filas) {
   const cfg = getConfigFilas();
   let h = `<div class="plan-outer">`;
-  if (estado.fase && FASES_FORMATO[estado.fase]) {
-    h += `<div class="fase-formato">${FASES_FORMATO[estado.fase]}</div>`;
-  }
-  const notaFase = getNotaFase(estado.fase);
-  if (notaFase) h += `<div class="nota-fase">${notaFase}</div>`;
   h += `<table><thead><tr><th class="row-header">Fila / Día</th>`;
   DIAS.forEach((d, i) => {
     h += `<th class="col-header"><span class="dia-label">${d}</span><button class="copy-dia-btn" onclick="copiarDia(${i})">📲 Copiar día</button></th>`;
@@ -1191,7 +1186,6 @@ function copiarDia(diaIdx) {
   const cfg = getConfigFilas();
   const dia = DIAS[diaIdx];
   let txt = `*🏑 Hockey Vivo – ${planActual.titulo}*\n*${dia}*\n`;
-  if (estado.fase && FASES_FORMATO[estado.fase]) txt += `_${FASES_FORMATO[estado.fase]}_\n`;
   const notaFase = getNotaFase(estado.fase);
   if (notaFase) txt += `_${notaFase}_\n`;
   txt += `\n`;
@@ -1371,9 +1365,11 @@ function exportarPDF() {
   const outer = cont.querySelector('.plan-outer');
   if (!outer) { toast("No hay tabla para exportar"); return; }
   const pa = document.getElementById("print-area");
+  const notaPDF = getNotaFase(estado.fase);
   pa.innerHTML = `
     <h2>🏑 Hockey Vivo – ${planActual.titulo}</h2>
     <p>${planActual.fecha}${estado.foco ? ' · Foco: ' + estado.foco : ''}</p>
+    ${notaPDF ? `<div class="nota-fase" style="font-style:normal">${notaPDF}</div>` : ''}
     ${outer.outerHTML}`;
   pa.querySelectorAll(".copy-dia-btn, .edit-int-btn").forEach(b => b.remove());
   window.print();
@@ -1531,7 +1527,6 @@ function _renderLibroPlan() {
   const notaFase = faseKey ? (notas[faseKey] || NOTAS_FASE_DEFAULT[faseKey]) : null;
   let html = `<div class="libro-plan-titulo">${p.titulo}${rangoStr}</div>
 <div class="libro-plan-meta">${p.fecha}${p.foco ? ' · Foco: ' + p.foco : ''}</div>`;
-  if (p.fase && FASES_FORMATO[p.fase]) html += `<div class="fase-formato">${FASES_FORMATO[p.fase]}</div>`;
   if (notaFase) html += `<div class="nota-fase">${notaFase}</div>`;
   html += _renderTablaReadOnly(p.filas);
   html += `<div class="libro-plan-btns">
