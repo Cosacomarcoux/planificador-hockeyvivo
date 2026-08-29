@@ -226,39 +226,180 @@ td.editing input { width: 100%; border: none; outline: 2px solid var(--verde); p
 
 /* Banner DB desconectada */
 #banner-no-db { display: none; position: fixed; top: 0; left: 0; right: 0; z-index: 1000; background: #fef3c7; color: #92400e; padding: 9px 16px; font-size: 13px; text-align: center; border-bottom: 2px solid #fcd34d; font-weight: 500; }
+
+/* ─── NAVBAR ───────────────────────────────────────────────────────────────── */
+#navbar { background: var(--verde); color: white; padding: 0 1.5rem; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 90; min-height: 56px; box-shadow: 0 2px 8px rgba(0,0,0,0.18); gap: 12px; }
+.nav-brand { font-size: 1rem; font-weight: 700; white-space: nowrap; flex-shrink: 0; }
+.nav-links { display: flex; gap: 4px; align-items: center; }
+.nav-btn { background: rgba(255,255,255,0.12); color: white; border: 1px solid rgba(255,255,255,0.25); border-radius: 7px; padding: 7px 13px; font-size: 13px; cursor: pointer; font-weight: 500; transition: background 0.15s; white-space: nowrap; }
+.nav-btn:hover, .nav-btn.active-screen { background: rgba(255,255,255,0.3); }
+.hamburger { display: none; background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; padding: 6px; line-height: 1; }
+@media (max-width: 720px) {
+  .hamburger { display: block; }
+  .nav-links { display: none; flex-direction: column; position: absolute; top: 56px; left: 0; right: 0; background: #155e39; padding: 10px 1rem 16px; gap: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 89; }
+  .nav-links.open { display: flex; }
+  .nav-btn { text-align: left; padding: 9px 14px; }
+  .nav-brand { font-size: 0.9rem; }
+}
+
+/* ─── SCREENS ──────────────────────────────────────────────────────────────── */
+.screen { display: none; animation: fadeIn 0.18s ease; }
+.screen.active { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+.screen-container { max-width: 940px; margin: 0 auto; padding: 1.75rem 1rem 3rem; }
+
+/* ─── PANEL CARDS ──────────────────────────────────────────────────────────── */
+.panel-card { background: var(--blanco); border-radius: 14px; padding: 2rem 2.25rem; box-shadow: 0 2px 14px rgba(0,0,0,0.07); }
+.panel-title { font-size: 1.25rem; font-weight: 700; color: var(--verde); margin-bottom: 1.5rem; }
+.plan-card { background: var(--blanco); border-radius: 14px; padding: 1.5rem 1.75rem; box-shadow: 0 2px 14px rgba(0,0,0,0.07); }
+.plan-titulo { font-size: 1.15rem; font-weight: 700; color: var(--negro); margin-bottom: 4px; }
+.plan-subtitulo { font-size: 12px; color: var(--gris); margin-bottom: 12px; }
+
+/* ─── FORM ─────────────────────────────────────────────────────────────────── */
+.form-group { margin-bottom: 1.25rem; }
+.form-label { display: block; font-size: 11px; font-weight: 700; color: var(--gris); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em; }
+.seg-group { display: flex; gap: 6px; flex-wrap: wrap; }
+.seg-btn { padding: 9px 20px; border: 1.5px solid var(--verde-borde); border-radius: 8px; background: var(--verde-claro); color: var(--verde); font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.12s; }
+.seg-btn:hover { background: var(--verde-borde); }
+.seg-btn.active { background: var(--verde); color: white; border-color: var(--verde); box-shadow: 0 2px 6px rgba(26,122,74,0.3); }
+.form-select { max-width: 380px; width: 100%; border: 1.5px solid var(--verde-borde); border-radius: 8px; padding: 9px 12px; font-size: 14px; font-family: inherit; background: white; color: var(--negro); outline: none; cursor: pointer; }
+.form-select:focus { border-color: var(--verde); }
+.fechas-row { display: flex; gap: 20px; flex-wrap: wrap; }
+.fecha-label { font-size: 12px; font-weight: 600; color: var(--gris); display: flex; flex-direction: column; gap: 5px; }
+.form-date { border: 1.5px solid var(--verde-borde); border-radius: 8px; padding: 8px 10px; font-size: 14px; font-family: inherit; outline: none; }
+.form-date:focus { border-color: var(--verde); }
+.btn-generar { display: block; width: 100%; padding: 15px; background: var(--verde); color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: 700; cursor: pointer; margin-top: 1.75rem; transition: background 0.15s; letter-spacing: 0.01em; }
+.btn-generar:hover { background: #155e39; }
+
+/* ─── PLANES GUARDADOS ─────────────────────────────────────────────────────── */
+.planes-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 1rem; }
+.planes-header .panel-title { margin-bottom: 0; }
+.modo-toggle { display: flex; gap: 4px; }
+.modo-btn { padding: 7px 14px; border: 1.5px solid var(--verde-borde); border-radius: 8px; background: var(--verde-claro); color: var(--verde); font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.12s; }
+.modo-btn.active { background: var(--verde); color: white; border-color: var(--verde); }
+.planes-filtros { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 1.25rem; padding-bottom: 1.25rem; border-bottom: 1px solid var(--verde-borde); }
+.libro-nav { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+.libro-nav-btn { padding: 10px 22px; border: 1.5px solid var(--verde-borde); border-radius: 8px; background: var(--verde-claro); color: var(--verde); font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.12s; }
+.libro-nav-btn:hover:not(:disabled) { background: var(--verde-borde); }
+.libro-nav-btn:disabled { opacity: 0.35; cursor: default; }
+.libro-contador { font-size: 13px; color: var(--gris); font-weight: 500; }
+.libro-contenido { animation: fadeIn 0.18s ease; }
+.libro-plan-titulo { font-size: 1.1rem; font-weight: 700; color: var(--negro); margin-bottom: 3px; }
+.libro-plan-meta { font-size: 12px; color: var(--gris); margin-bottom: 12px; }
+.libro-plan-btns { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+@media (max-width: 600px) {
+  .panel-card { padding: 1.25rem 1rem; }
+  .libro-nav-btn { padding: 8px 14px; font-size: 13px; }
+  .seg-btn { padding: 8px 14px; font-size: 13px; }
+}
 </style>
 </head>
 <body>
 
 <div id="banner-no-db">⚠️ La base de datos no está conectada — los cambios se guardan solo en este dispositivo/navegador.</div>
 
-<header>
-  <div>
-    <h1>🏑 Planificador Semanal</h1>
-    <span>Hockey Vivo – Santiago del Estero</span>
+<nav id="navbar">
+  <div class="nav-brand">🏑 Hockey Vivo — Planificador</div>
+  <button class="hamburger" id="hamburger-btn" onclick="toggleMenu()" aria-label="Menú">☰</button>
+  <div class="nav-links" id="nav-links">
+    <button class="nav-btn active-screen" data-screen="screen-nueva" onclick="navegar('screen-nueva')">Nueva planificación</button>
+    <button class="nav-btn" data-screen="screen-planes" onclick="navegar('screen-planes')">Planes guardados</button>
+    <button class="nav-btn" onclick="abrirConfig()">⚙️ Configuración</button>
+    <button class="nav-btn" onclick="abrirBanco()">🗂️ Banco</button>
   </div>
-  <div class="header-right">
-    <button class="hist-btn" onclick="abrirBanco()">⚙️ Banco</button>
-    <button class="hist-btn" onclick="abrirBiblioteca()">📚 Biblioteca</button>
-    <button class="hist-btn" onclick="abrirHistorial()">📂 Planes guardados</button>
-    <button class="hist-btn" onclick="abrirConfig()">🔧 Configuración</button>
-  </div>
-</header>
+</nav>
 
-<div class="container">
-  <div id="chat-box"></div>
-  <div id="input-area">
-    <textarea id="user-input" placeholder="Escribí tu respuesta..." rows="1"></textarea>
-    <button id="send-btn" onclick="sendMessage()">Enviar ↗</button>
+<!-- SCREEN 1: NUEVA PLANIFICACIÓN -->
+<div id="screen-nueva" class="screen active">
+  <div class="screen-container">
+    <div class="panel-card">
+      <h2 class="panel-title">Nueva planificación</h2>
+      <div class="form-group">
+        <label class="form-label">Semana del mesociclo</label>
+        <div class="seg-group" id="seg-semana">
+          <button class="seg-btn" data-val="Semana 1" onclick="selSemana(this)">1</button>
+          <button class="seg-btn" data-val="Semana 2" onclick="selSemana(this)">2</button>
+          <button class="seg-btn" data-val="Semana 3" onclick="selSemana(this)">3</button>
+          <button class="seg-btn" data-val="Semana 4" onclick="selSemana(this)">4</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Fase</label>
+        <div class="seg-group" id="seg-fase">
+          <button class="seg-btn" data-val="Semana A – Fuerza" onclick="selFase(this)">💪 Fuerza</button>
+          <button class="seg-btn" data-val="Semana B – Potencia" onclick="selFase(this)">⚡ Potencia</button>
+          <button class="seg-btn" data-val="Semana C – Pliometría" onclick="selFase(this)">🦘 Pliometría</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="form-foco">Foco especial</label>
+        <select id="form-foco" class="form-select">
+          <option>No, semana estándar</option>
+          <option>Más trabajo técnico</option>
+          <option>Semana de descarga</option>
+          <option>Foco en cabina</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Fechas de la semana</label>
+        <div class="fechas-row">
+          <label class="fecha-label">Desde <input type="date" id="form-fecha-inicio" class="form-date"></label>
+          <label class="fecha-label">Hasta <input type="date" id="form-fecha-fin" class="form-date"></label>
+        </div>
+      </div>
+      <button class="btn-generar" onclick="generarDesdePanelForm()">Generar planificación →</button>
+    </div>
   </div>
-  <button id="reset-btn" onclick="resetChat()">↺ Nueva planificación</button>
 </div>
 
-<div class="modal-overlay" id="modal-hist">
-  <div class="modal">
-    <button class="modal-close" onclick="cerrarHistorial()">✕</button>
-    <h2>📂 Planes guardados</h2>
-    <div id="hist-lista"></div>
+<!-- SCREEN 2: RESULTADO DEL PLAN -->
+<div id="screen-plan" class="screen">
+  <div class="screen-container">
+    <div class="plan-card">
+      <h2 id="plan-titulo" class="plan-titulo"></h2>
+      <p id="plan-subtitulo" class="plan-subtitulo"></p>
+      <div id="plan-nota-fase" class="nota-fase" style="display:none"></div>
+      <div id="plan-tabla-container"></div>
+      <div class="action-btns" style="margin-top:16px">
+        <button class="action-btn primary" onclick="guardarPlan()">💾 Guardar</button>
+        <button class="action-btn" onclick="copiarTablaCompleta()">📲 Copiar todo</button>
+        <button class="action-btn" onclick="exportarPDF()">🖨️ PDF</button>
+        <button class="action-btn" onclick="toggleInts()">👁 Intenciones</button>
+        <button class="action-btn" onclick="navegar('screen-nueva')">← Nueva</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 3: PLANES GUARDADOS -->
+<div id="screen-planes" class="screen">
+  <div class="screen-container">
+    <div class="panel-card">
+      <div class="planes-header">
+        <h2 class="panel-title">Planes guardados</h2>
+        <div class="modo-toggle">
+          <button class="modo-btn active" id="modo-libro-btn" onclick="switchModoPlanes('libro')">📖 Libro</button>
+          <button class="modo-btn" id="modo-lista-btn" onclick="switchModoPlanes('lista')">☰ Lista</button>
+        </div>
+      </div>
+      <div class="planes-filtros">
+        <label class="fecha-label">Desde <input type="date" id="planes-filtro-desde"></label>
+        <label class="fecha-label">Hasta <input type="date" id="planes-filtro-hasta"></label>
+        <button class="action-btn" onclick="aplicarFiltroPlanesScreen()">Filtrar</button>
+        <button class="action-btn" onclick="limpiarFiltroPlanesScreen()">✕ Limpiar</button>
+      </div>
+      <div id="modo-libro">
+        <div class="libro-nav">
+          <button class="libro-nav-btn" id="libro-prev" onclick="navLibro(-1)">← Anterior</button>
+          <span id="libro-contador" class="libro-contador"></span>
+          <button class="libro-nav-btn" id="libro-next" onclick="navLibro(1)">Siguiente →</button>
+        </div>
+        <div id="libro-contenido" class="libro-contenido"></div>
+      </div>
+      <div id="modo-lista" style="display:none">
+        <div id="lista-planes-contenido"></div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1029,12 +1170,14 @@ function toggleInts() {
 
 function _rerenderUltimaTabla() {
   if (!planActual) return;
-  const all = document.querySelectorAll(".plan-outer");
-  if (!all.length) return;
-  const last = all[all.length - 1];
-  const temp = document.createElement("div");
-  temp.innerHTML = renderTabla(planActual.filas);
-  last.replaceWith(temp.firstElementChild);
+  const cont = document.getElementById('plan-tabla-container');
+  if (cont) cont.innerHTML = renderTabla(planActual.filas);
+  // También actualizar el encabezado del plan
+  const notaFase = getNotaFase(estado.fase);
+  const notaEl = document.getElementById('plan-nota-fase');
+  if (notaEl) { notaEl.textContent = notaFase || ''; notaEl.style.display = notaFase ? '' : 'none'; }
+  // Si el modo libro está visible, re-renderizar
+  if (_modoPlanes === 'libro' && _revistaPlanesActuales.length && document.getElementById('screen-planes')?.classList.contains('active')) _renderLibroPlan();
 }
 
 function cerrarDropdown() {
@@ -1110,131 +1253,15 @@ function guardarPlan() {
 
 // ─── HISTORIAL ───────────────────────────────────────────────────────────────
 function abrirHistorial() {
-  document.getElementById("modal-hist").classList.add("open");
-  _renderHistorialContenido("", "");
-}
-
-function _renderHistorialContenido(desdeVal, hastaVal) {
-  const planes = JSON.parse(localStorage.getItem("hv_planes") || "[]");
-  const lista  = document.getElementById("hist-lista");
-  lista.innerHTML = `
-    <div style="margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--verde-borde)">
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
-        <label style="font-size:12px">Desde: <input type="date" id="hist-filtro-desde" value="${desdeVal}"></label>
-        <label style="font-size:12px">Hasta: <input type="date" id="hist-filtro-hasta" value="${hastaVal}"></label>
-        <button onclick="_aplicarFiltroHistorial()" class="hist-load">Filtrar</button>
-        <button onclick="_limpiarFiltroHistorial()" class="hist-load">✕ Limpiar</button>
-      </div>
-      <button class="action-btn" onclick="abrirVistaRevista()" style="font-size:12px;padding:6px 12px">📖 Vista revista</button>
-    </div>
-    <div id="hist-planes-lista"></div>`;
-  _renderListaPlanes(planes, desdeVal, hastaVal);
-}
-
-function _renderListaPlanes(planes, desde, hasta) {
-  let filtrados = planes;
-  if (desde || hasta) {
-    filtrados = planes.filter(p => {
-      if (!p.fechaInicio && !p.fechaFin) return true;
-      if (desde && p.fechaFin && p.fechaFin < desde) return false;
-      if (hasta && p.fechaInicio && p.fechaInicio > hasta) return false;
-      return true;
-    });
-  }
-  const div = document.getElementById("hist-planes-lista");
-  if (!div) return;
-  if (!filtrados.length) {
-    div.innerHTML = `<div class="empty-hist">${desde||hasta ? 'No hay planes en ese rango de fechas.' : 'Todavía no guardaste ningún plan.<br>Generá uno y tocá "Guardar plan".'}</div>`;
-    return;
-  }
-  div.innerHTML = filtrados.map(p => {
-    const rango = p.rangoFechas ? ` · ${p.rangoFechas}` : "";
-    return `<div class="hist-item" id="hist-${p.id}">
-      <div class="hist-item-info">
-        <strong>${p.titulo}${rango}</strong>
-        <span>${p.fecha} · Foco: ${p.foco}</span>
-      </div>
-      <div class="hist-item-btns">
-        <button class="hist-load" onclick="cargarPlan(${p.id})">Cargar</button>
-        <button class="hist-del"  onclick="borrarPlan(${p.id})">✕</button>
-      </div>
-    </div>`;
-  }).join("");
-}
-
-function _aplicarFiltroHistorial() {
-  const desde = document.getElementById("hist-filtro-desde")?.value || "";
-  const hasta  = document.getElementById("hist-filtro-hasta")?.value || "";
-  const planes = JSON.parse(localStorage.getItem("hv_planes") || "[]");
-  _renderListaPlanes(planes, desde, hasta);
-}
-
-function _limpiarFiltroHistorial() {
-  const planes = JSON.parse(localStorage.getItem("hv_planes") || "[]");
-  _renderListaPlanes(planes, "", "");
-  const d = document.getElementById("hist-filtro-desde"); if (d) d.value = "";
-  const h = document.getElementById("hist-filtro-hasta"); if (h) h.value = "";
+  navegar('screen-planes');
 }
 
 function cerrarHistorial() {
-  document.getElementById("modal-hist").classList.remove("open");
+  // mantenida por compatibilidad — ya no hay modal-hist
 }
 
-// ─── VISTA REVISTA ────────────────────────────────────────────────────────────
-let _revistaPlanesActuales = [];
-let _revistaIdx = 0;
-
-function abrirVistaRevista() {
-  let planes = JSON.parse(localStorage.getItem("hv_planes") || "[]");
-  const desde = document.getElementById("hist-filtro-desde")?.value || "";
-  const hasta  = document.getElementById("hist-filtro-hasta")?.value || "";
-  if (desde || hasta) {
-    planes = planes.filter(p => {
-      if (!p.fechaInicio && !p.fechaFin) return true;
-      if (desde && p.fechaFin && p.fechaFin < desde) return false;
-      if (hasta && p.fechaInicio && p.fechaInicio > hasta) return false;
-      return true;
-    });
-  }
-  planes.sort((a, b) => {
-    if (!a.fechaInicio && !b.fechaInicio) return 0;
-    if (!a.fechaInicio) return 1;
-    if (!b.fechaInicio) return -1;
-    return a.fechaInicio.localeCompare(b.fechaInicio);
-  });
-  if (!planes.length) { toast("No hay planes para mostrar en vista revista"); return; }
-  _revistaPlanesActuales = planes;
-  _revistaIdx = 0;
-  document.getElementById("modal-revista").classList.add("open");
-  _renderRevistaPlan();
-}
-
-function cerrarRevista() {
-  document.getElementById("modal-revista").classList.remove("open");
-}
-
-function revistaNav(dir) {
-  _revistaIdx = Math.max(0, Math.min(_revistaPlanesActuales.length - 1, _revistaIdx + dir));
-  _renderRevistaPlan();
-}
-
-function _renderRevistaPlan() {
-  const p = _revistaPlanesActuales[_revistaIdx];
-  const total = _revistaPlanesActuales.length;
-  document.getElementById("revista-contador").textContent = `${_revistaIdx + 1} de ${total}`;
-  document.getElementById("revista-prev").disabled = (_revistaIdx === 0);
-  document.getElementById("revista-next").disabled = (_revistaIdx === total - 1);
-  const rangoStr = p.rangoFechas ? ` · ${p.rangoFechas}` : "";
-  const faseKey  = p.fase ? ["Fuerza","Potencia","Pliometría"].find(k => p.fase.includes(k)) : null;
-  const notas    = JSON.parse(localStorage.getItem("hv_notas_fase") || "{}");
-  const notaFase = faseKey ? (notas[faseKey] || NOTAS_FASE_DEFAULT[faseKey]) : null;
-  let html = `<h3 style="font-size:1rem;font-weight:700;margin-bottom:4px">${p.titulo}${rangoStr}</h3>`;
-  html += `<p style="font-size:12px;color:var(--gris);margin-bottom:10px">${p.fecha}${p.foco ? ' · Foco: ' + p.foco : ''}</p>`;
-  if (p.fase && FASES_FORMATO[p.fase]) html += `<div class="fase-formato">${FASES_FORMATO[p.fase]}</div>`;
-  if (notaFase) html += `<div class="nota-fase">${notaFase}</div>`;
-  html += _renderTablaReadOnly(p.filas);
-  document.getElementById("revista-contenido").innerHTML = html;
-}
+// abrirVistaRevista / cerrarRevista / revistaNav / _renderRevistaPlan
+// → ahora integradas en screen-planes (iniciarPlanesScreen / _renderLibroPlan)
 
 function _renderTablaReadOnly(filas) {
   const cfg = getConfigFilas();
@@ -1319,50 +1346,35 @@ function cargarPlan(id) {
   const planes = JSON.parse(localStorage.getItem("hv_planes") || "[]");
   const p = planes.find(x => x.id === id);
   if (!p) return;
-  cerrarHistorial();
   estado.semana = p.semana;
   estado.fase   = p.fase;
   estado.foco   = p.foco;
   planActual = { filas: p.filas, titulo: p.titulo, fecha: p.fecha, fechaInicio: p.fechaInicio || null, fechaFin: p.fechaFin || null, rangoFechas: p.rangoFechas || null };
-  const box = document.getElementById("chat-box");
-  box.innerHTML = "";
-  const rangoStr = p.rangoFechas ? ` · ${p.rangoFechas}` : "";
-  const header = `<strong>${p.titulo}${rangoStr}</strong> <small style="color:#6b7280">(cargado del historial)</small>`;
-  addAIMsg(header + renderTabla(p.filas) + botonesAccion(), [], true);
+  mostrarPlanEnPantalla();
+  navegar('screen-plan');
 }
 
 function borrarPlan(id) {
   let planes = JSON.parse(localStorage.getItem("hv_planes") || "[]");
   planes = planes.filter(x => x.id !== id);
   localStorage.setItem("hv_planes", JSON.stringify(planes));
-  document.getElementById(`hist-${id}`)?.remove();
-  const lista = document.getElementById("hist-lista");
-  if (!lista.children.length) lista.innerHTML = `<div class="empty-hist">No hay planes guardados.</div>`;
+  iniciarPlanesScreen();
 }
 
-// ─── BOTONES DE ACCIÓN ───────────────────────────────────────────────────────
-function botonesAccion() {
-  return `<div class="action-btns">
-    <button class="action-btn primary" onclick="guardarPlan()">💾 Guardar plan</button>
-    <button class="action-btn" onclick="copiarTablaCompleta()">📋 Copiar todo para WhatsApp</button>
-    <button class="action-btn" onclick="exportarPDF()">🖨️ Exportar PDF</button>
-    <button class="action-btn" onclick="toggleInts()">👁 Intenciones sí/no</button>
-  </div>`;
-}
+// botonesAccion — ya no se usa (los botones están en el HTML de screen-plan)
 
 // ─── EXPORTAR PDF ─────────────────────────────────────────────────────────────
 function exportarPDF() {
   if (!planActual) { toast("Primero generá o cargá un plan"); return; }
-  const outers = document.querySelectorAll(".plan-outer");
-  if (!outers.length) { toast("No hay tabla para exportar"); return; }
-  // La última tabla (la del plan actual), incluyendo el banner de fase
-  const cont = outers[outers.length - 1];
+  const cont = document.getElementById('plan-tabla-container');
+  if (!cont) { toast("No hay tabla para exportar"); return; }
+  const outer = cont.querySelector('.plan-outer');
+  if (!outer) { toast("No hay tabla para exportar"); return; }
   const pa = document.getElementById("print-area");
   pa.innerHTML = `
     <h2>🏑 Hockey Vivo – ${planActual.titulo}</h2>
     <p>${planActual.fecha}${estado.foco ? ' · Foco: ' + estado.foco : ''}</p>
-    ${cont.outerHTML}`;
-  // Eliminar botones de la copia impresa
+    ${outer.outerHTML}`;
   pa.querySelectorAll(".copy-dia-btn, .edit-int-btn").forEach(b => b.remove());
   window.print();
   pa.innerHTML = "";
@@ -1376,136 +1388,179 @@ function toast(msg) {
   setTimeout(() => t.classList.remove("show"), 2200);
 }
 
-// ─── CHAT ENGINE ─────────────────────────────────────────────────────────────
-function addMsg(role, contenido, esHtml=false) {
-  const box = document.getElementById("chat-box");
-  const div = document.createElement("div"); div.className = `msg ${role}`;
-  const av  = document.createElement("div"); av.className  = `avatar av-${role}`; av.textContent = role === "ai" ? "IA" : "Vos";
-  const bub = document.createElement("div"); bub.className = `bubble ${role}`;
-  if (esHtml) bub.innerHTML = contenido;
-  else bub.textContent = contenido;
-  div.appendChild(av); div.appendChild(bub);
-  box.appendChild(div); box.scrollTop = box.scrollHeight;
+// ─── NAVEGACIÓN DE PANTALLAS ──────────────────────────────────────────────────
+function navegar(screenId) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(screenId).classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  document.querySelectorAll('.nav-btn[data-screen]').forEach(b => {
+    b.classList.toggle('active-screen', b.dataset.screen === screenId);
+  });
+  document.getElementById('nav-links')?.classList.remove('open');
+  if (screenId === 'screen-planes') iniciarPlanesScreen();
 }
 
-function addAIMsg(texto, opts=[], esHtml=false) {
-  const box = document.getElementById("chat-box");
-  const div = document.createElement("div"); div.className = "msg ai";
-  const av  = document.createElement("div"); av.className  = "avatar av-ai"; av.textContent = "IA";
-  const bub = document.createElement("div"); bub.className = "bubble ai";
+function toggleMenu() {
+  document.getElementById('nav-links')?.classList.toggle('open');
+}
 
-  if (esHtml) {
-    bub.innerHTML = texto;
-  } else {
-    texto.split("\n").forEach((line, i) => {
-      if (i > 0) bub.appendChild(document.createElement("br"));
-      bub.appendChild(document.createTextNode(line));
+// ─── FORM NUEVA PLANIFICACIÓN ─────────────────────────────────────────────────
+let _formSemana = null;
+let _formFase = null;
+
+function selSemana(btn) {
+  _formSemana = btn.dataset.val;
+  document.querySelectorAll('#seg-semana .seg-btn').forEach(b => b.classList.toggle('active', b === btn));
+}
+
+function selFase(btn) {
+  _formFase = btn.dataset.val;
+  document.querySelectorAll('#seg-fase .seg-btn').forEach(b => b.classList.toggle('active', b === btn));
+}
+
+function generarDesdePanelForm() {
+  if (!_formSemana) { toast('Seleccioná la semana del mesociclo'); return; }
+  if (!_formFase)   { toast('Seleccioná la fase'); return; }
+  const foco = document.getElementById('form-foco')?.value || 'No, semana estándar';
+  const fi   = document.getElementById('form-fecha-inicio')?.value || '';
+  const ff   = document.getElementById('form-fecha-fin')?.value || '';
+  estado.semana = _formSemana;
+  estado.fase   = _formFase;
+  estado.foco   = foco;
+  const filas = generarFilas();
+  const titulo = `${estado.semana} – ${estado.fase}`;
+  const fecha  = new Date().toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  let rangoFechas = '';
+  if (fi && ff) {
+    const dFi = new Date(fi + 'T00:00:00');
+    const dFf = new Date(ff + 'T00:00:00');
+    rangoFechas = dFi.toLocaleDateString('es-AR', {day:'2-digit',month:'2-digit'}) + ' al ' +
+                  dFf.toLocaleDateString('es-AR', {day:'2-digit',month:'2-digit',year:'numeric'});
+  }
+  planActual = { filas, titulo, fecha, fechaInicio: fi || null, fechaFin: ff || null, rangoFechas };
+  mostrarPlanEnPantalla();
+  navegar('screen-plan');
+}
+
+function mostrarPlanEnPantalla() {
+  if (!planActual) return;
+  const rangoStr = planActual.rangoFechas ? ' · ' + planActual.rangoFechas : '';
+  document.getElementById('plan-titulo').textContent = planActual.titulo + rangoStr;
+  document.getElementById('plan-subtitulo').textContent =
+    planActual.fecha + (estado.foco ? ' · Foco: ' + estado.foco : '') +
+    ' · Tocá cualquier celda para editar';
+  const notaFase = getNotaFase(estado.fase);
+  const notaEl = document.getElementById('plan-nota-fase');
+  if (notaEl) { notaEl.textContent = notaFase || ''; notaEl.style.display = notaFase ? '' : 'none'; }
+  const cont = document.getElementById('plan-tabla-container');
+  if (cont) cont.innerHTML = renderTabla(planActual.filas);
+}
+
+// ─── PANTALLA PLANES GUARDADOS ────────────────────────────────────────────────
+let _modoPlanes = 'libro';
+let _revistaPlanesActuales = [];
+let _revistaIdx = 0;
+
+function iniciarPlanesScreen() {
+  const desde = document.getElementById('planes-filtro-desde')?.value || '';
+  const hasta  = document.getElementById('planes-filtro-hasta')?.value || '';
+  let planes = JSON.parse(localStorage.getItem('hv_planes') || '[]');
+  if (desde || hasta) {
+    planes = planes.filter(p => {
+      if (!p.fechaInicio && !p.fechaFin) return true;
+      if (desde && p.fechaFin && p.fechaFin < desde) return false;
+      if (hasta && p.fechaInicio && p.fechaInicio > hasta) return false;
+      return true;
     });
   }
+  planes.sort((a, b) => {
+    if (!a.fechaInicio && !b.fechaInicio) return 0;
+    if (!a.fechaInicio) return 1;
+    if (!b.fechaInicio) return -1;
+    return a.fechaInicio.localeCompare(b.fechaInicio);
+  });
+  _revistaPlanesActuales = planes;
+  _revistaIdx = 0;
+  if (_modoPlanes === 'libro') _renderLibroView();
+  else _renderListaView();
+}
 
-  if (opts.length) {
-    const od = document.createElement("div"); od.className = "opts";
-    opts.forEach(o => {
-      const btn = document.createElement("button");
-      btn.className = "opt-btn";
-      btn.textContent = o;
-      btn.onclick = () => { deshabilitarOpts(od); handleOpt(o); };
-      od.appendChild(btn);
-    });
-    bub.appendChild(od);
+function switchModoPlanes(modo) {
+  _modoPlanes = modo;
+  document.getElementById('modo-libro-btn').classList.toggle('active', modo === 'libro');
+  document.getElementById('modo-lista-btn').classList.toggle('active', modo === 'lista');
+  document.getElementById('modo-libro').style.display = modo === 'libro' ? '' : 'none';
+  document.getElementById('modo-lista').style.display = modo === 'lista' ? '' : 'none';
+  if (modo === 'libro') _renderLibroView(); else _renderListaView();
+}
+
+function aplicarFiltroPlanesScreen() { iniciarPlanesScreen(); }
+
+function limpiarFiltroPlanesScreen() {
+  const d = document.getElementById('planes-filtro-desde'); if (d) d.value = '';
+  const h = document.getElementById('planes-filtro-hasta'); if (h) h.value = '';
+  iniciarPlanesScreen();
+}
+
+function navLibro(dir) {
+  _revistaIdx = Math.max(0, Math.min(_revistaPlanesActuales.length - 1, _revistaIdx + dir));
+  _renderLibroPlan();
+}
+
+function _renderLibroView() {
+  if (!_revistaPlanesActuales.length) {
+    document.getElementById('libro-contenido').innerHTML = '<div class="empty-hist">No hay planes guardados. Generá uno y tocá "💾 Guardar".</div>';
+    document.getElementById('libro-contador').textContent = '';
+    document.getElementById('libro-prev').disabled = true;
+    document.getElementById('libro-next').disabled = true;
+    return;
   }
-
-  div.appendChild(av); div.appendChild(bub);
-  box.appendChild(div); box.scrollTop = box.scrollHeight;
+  _renderLibroPlan();
 }
 
-function deshabilitarOpts(container) {
-  container.querySelectorAll(".opt-btn").forEach(b => b.disabled = true);
+function _renderLibroPlan() {
+  if (!_revistaPlanesActuales.length) return;
+  const p = _revistaPlanesActuales[_revistaIdx];
+  const total = _revistaPlanesActuales.length;
+  document.getElementById('libro-contador').textContent = `${_revistaIdx + 1} de ${total}`;
+  document.getElementById('libro-prev').disabled = (_revistaIdx === 0);
+  document.getElementById('libro-next').disabled = (_revistaIdx === total - 1);
+  const rangoStr = p.rangoFechas ? ' · ' + p.rangoFechas : '';
+  const faseKey  = p.fase ? ['Fuerza','Potencia','Pliometría'].find(k => p.fase.includes(k)) : null;
+  const notas    = JSON.parse(localStorage.getItem('hv_notas_fase') || '{}');
+  const notaFase = faseKey ? (notas[faseKey] || NOTAS_FASE_DEFAULT[faseKey]) : null;
+  let html = `<div class="libro-plan-titulo">${p.titulo}${rangoStr}</div>
+<div class="libro-plan-meta">${p.fecha}${p.foco ? ' · Foco: ' + p.foco : ''}</div>`;
+  if (p.fase && FASES_FORMATO[p.fase]) html += `<div class="fase-formato">${FASES_FORMATO[p.fase]}</div>`;
+  if (notaFase) html += `<div class="nota-fase">${notaFase}</div>`;
+  html += _renderTablaReadOnly(p.filas);
+  html += `<div class="libro-plan-btns">
+    <button class="action-btn primary" onclick="cargarPlan(${p.id})">✏️ Cargar para editar</button>
+    <button class="action-btn" style="background:#fee2e2;color:#b91c1c;border-color:#fca5a5" onclick="if(confirm('¿Borrar este plan?'))borrarPlan(${p.id})">🗑️ Borrar</button>
+  </div>`;
+  document.getElementById('libro-contenido').innerHTML = html;
 }
 
-function showTyping() {
-  const box = document.getElementById("chat-box");
-  const div = document.createElement("div"); div.className = "msg ai"; div.id = "typing";
-  const av  = document.createElement("div"); av.className  = "avatar av-ai"; av.textContent = "IA";
-  const bub = document.createElement("div"); bub.className = "bubble ai";
-  bub.innerHTML = `<div class="typing"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>`;
-  div.appendChild(av); div.appendChild(bub);
-  box.appendChild(div); box.scrollTop = box.scrollHeight;
-}
-
-function removeTyping() {
-  const t = document.getElementById("typing");
-  if (t) t.remove();
-}
-
-function handleOpt(val) { addMsg("user", val); procesarRespuesta(val); }
-
-function sendMessage() {
-  const inp = document.getElementById("user-input");
-  const val = inp.value.trim();
-  if (!val) return;
-  inp.value = "";
-  addMsg("user", val);
-  procesarRespuesta(val);
-}
-
-function procesarRespuesta(val) {
-  const q = PREGUNTAS[estado.step];
-  if (q) estado[q.key] = val;
-  estado.step++;
-  showTyping();
-
-  setTimeout(() => {
-    removeTyping();
-    if (estado.step < PREGUNTAS.length) {
-      const next = PREGUNTAS[estado.step];
-      addAIMsg(next.texto, next.opts);
-    } else {
-      mostrarFormFechas();
-    }
-  }, 800);
-}
-
-function mostrarFormFechas() {
-  const hoy = new Date().toISOString().slice(0, 10);
-  addAIMsg(`<p style="margin-bottom:8px">¡Perfecto! ¿Cuál es el rango de fechas de esta semana?</p>
-<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-  <label style="font-size:13px">Desde: <input type="date" id="fecha-inicio" value="${hoy}" style="margin-left:4px;border:1px solid var(--verde-borde);border-radius:6px;padding:5px 7px;font-size:13px"></label>
-  <label style="font-size:13px">Hasta: <input type="date" id="fecha-fin" value="${hoy}" style="margin-left:4px;border:1px solid var(--verde-borde);border-radius:6px;padding:5px 7px;font-size:13px"></label>
-  <button class="action-btn primary" onclick="generarConFechas()" style="padding:6px 14px;font-size:13px">Generar plan ↗</button>
-</div>`, [], true);
-}
-
-function generarConFechas() {
-  const fi = document.getElementById("fecha-inicio")?.value || "";
-  const ff = document.getElementById("fecha-fin")?.value || "";
-  const btnGen = document.querySelector('[onclick="generarConFechas()"]');
-  if (btnGen) btnGen.disabled = true;
-  addAIMsg(`Generando el plan para ${estado.semana} – ${estado.fase}...`);
-  setTimeout(() => {
-    const filas = generarFilas();
-    const titulo = `${estado.semana} – ${estado.fase}`;
-    const fecha  = new Date().toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric" });
-    let rangoFechas = "";
-    if (fi && ff) {
-      const dFi = new Date(fi + 'T00:00:00');
-      const dFf = new Date(ff + 'T00:00:00');
-      rangoFechas = dFi.toLocaleDateString("es-AR", {day:"2-digit",month:"2-digit"}) + " al " +
-                    dFf.toLocaleDateString("es-AR", {day:"2-digit",month:"2-digit",year:"numeric"});
-    }
-    planActual = { filas, titulo, fecha, fechaInicio: fi || null, fechaFin: ff || null, rangoFechas };
-    const rangoStr = rangoFechas ? ` · ${rangoFechas}` : "";
-    const header = `<strong>${titulo}${rangoStr}</strong><br><small style="color:#6b7280">Foco: ${estado.foco} · ${fecha}</small><br><small style="color:#9ca3af;font-size:11px">✏️ Tocá cualquier celda (excepto las verdes) para editar</small>`;
-    addAIMsg(header + renderTabla(filas) + botonesAccion(), [], true);
-    setTimeout(() => { addAIMsg("¿Querés algo más?", ["Generar otra semana","Cambiar fase","Cambiar foco"]); }, 300);
-  }, 600);
-}
-
-function resetChat() {
-  document.getElementById("chat-box").innerHTML = "";
-  estado = { step: 0, semana: null, fase: null, foco: null };
-  planActual = null;
-  addAIMsg(PREGUNTAS[0].texto, PREGUNTAS[0].opts);
+function _renderListaView() {
+  const div = document.getElementById('lista-planes-contenido');
+  if (!div) return;
+  if (!_revistaPlanesActuales.length) {
+    div.innerHTML = '<div class="empty-hist">No hay planes en este rango de fechas.</div>';
+    return;
+  }
+  div.innerHTML = _revistaPlanesActuales.map(p => {
+    const rango = p.rangoFechas ? ' · ' + p.rangoFechas : '';
+    return `<div class="hist-item" id="histli-${p.id}">
+      <div class="hist-item-info">
+        <strong>${p.titulo}${rango}</strong>
+        <span>${p.fecha} · Foco: ${p.foco}</span>
+      </div>
+      <div class="hist-item-btns">
+        <button class="hist-load" onclick="cargarPlan(${p.id})">Cargar</button>
+        <button class="hist-del" onclick="if(confirm('¿Borrar?'))borrarPlan(${p.id})">✕</button>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 // ─── ADMIN BANCO DE EJERCICIOS ───────────────────────────────────────────────
@@ -1727,12 +1782,6 @@ function _guardarDetalle() {
 }
 
 // ─── INICIALIZACIÓN ──────────────────────────────────────────────────────────
-document.getElementById("user-input").addEventListener("keydown", e => {
-  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
-});
-document.getElementById("modal-hist").addEventListener("click", e => {
-  if (e.target === document.getElementById("modal-hist")) cerrarHistorial();
-});
 document.getElementById("modal-banco").addEventListener("click", e => {
   if (e.target === document.getElementById("modal-banco")) cerrarBanco();
 });
@@ -1745,13 +1794,22 @@ document.getElementById("modal-biblioteca").addEventListener("click", e => {
 document.getElementById("modal-config").addEventListener("click", e => {
   if (e.target === document.getElementById("modal-config")) cerrarConfig();
 });
-document.getElementById("modal-revista").addEventListener("click", e => {
-  if (e.target === document.getElementById("modal-revista")) cerrarRevista();
-});
 document.addEventListener("click", e => {
   const panel = document.getElementById("ejercicio-dropdown");
   if (panel.style.display === "none") return;
   if (!panel.contains(e.target) && e.target !== _dropdownTd && !_dropdownTd?.contains(e.target)) cerrarDropdown();
+});
+document.addEventListener("keydown", e => {
+  // Navegación teclado en modo libro
+  if (document.getElementById('screen-planes')?.classList.contains('active') && _modoPlanes === 'libro') {
+    if (e.key === 'ArrowLeft')  { e.preventDefault(); navLibro(-1); }
+    if (e.key === 'ArrowRight') { e.preventDefault(); navLibro(1); }
+  }
+  // Cerrar dropdown con Escape
+  if (e.key === 'Escape') {
+    const p = document.getElementById("ejercicio-dropdown");
+    if (p && p.style.display !== 'none') cerrarDropdown();
+  }
 });
 
 // ─── SINCRONIZACIÓN MULTI-DISPOSITIVO ────────────────────────────────────────
@@ -1831,7 +1889,7 @@ async function _bootSync() {
       }
     }
   } catch (e) { console.warn('Sin servidor de sync (modo local):', e.message); }
-  addAIMsg(PREGUNTAS[0].texto, PREGUNTAS[0].opts);
+  navegar('screen-nueva');
 }
 _bootSync();
 </script>
