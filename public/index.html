@@ -1029,6 +1029,17 @@ function getBancoEfectivo(key) {
   return [...base, ...extras].filter(e => !eliminados.includes(e));
 }
 
+// Banco de una cabina para un T.T. dado. En días de Enfrentamientos, los ejercicios
+// etiquetados EN se comparten: sirven para las dos cabinas, sin importar dónde se cargaron.
+function bancoCabina(label, tt) {
+  const propio = getBancoEfectivo(label);
+  if (tt !== "Enfrentamientos") return propio;
+  const otra = label === "Cabina 1" ? "Cabina 2" : "Cabina 1";
+  const manual = _etiquetasManual();
+  const enOtra = getBancoEfectivo(otra).filter(e => getEtiquetaTT(e, manual) === "Enfrentamientos" && !propio.includes(e));
+  return [...propio, ...enOtra];
+}
+
 // Retorna el banco correcto según la fila y el día
 function getBancoParaFila(label, diaIdx) {
   if (label.startsWith("Físico")) {
@@ -1037,8 +1048,8 @@ function getBancoParaFila(label, diaIdx) {
   }
   if (label.startsWith("Técnico")) return getBancoEfectivo("Técnicos");
   if (label === "Espacio 1")       return getBancoEfectivo("Espacio 1");
-  if (label === "Cabina 1")        return getBancoEfectivo("Cabina 1");
-  if (label === "Cabina 2")        return getBancoEfectivo("Cabina 2");
+  if (label === "Cabina 1" || label === "Cabina 2")
+    return bancoCabina(label, planActual?.filas?.["T.T."]?.[diaIdx]);
   return [];
 }
 
@@ -1072,9 +1083,14 @@ function generarFilas() {
     usadosSemana["Técnicos"].push(...tec);
     usadosSemana["Espacio 1"].push(...esp);
 
-    // Día de Enfrentamientos: las dos cabinas son "Enfrentamientos", sin elegir del banco
+    // Día de Enfrentamientos: UN ejercicio EN (cargado en Cabina 1 o en Cabina 2),
+    // repetido igual en las dos cabinas. Si no hay ninguno etiquetado EN, "Enfrentamientos".
     if (tt === "Enfrentamientos") {
-      c1.push("Enfrentamientos"); c2.push("Enfrentamientos");
+      const manual = _etiquetasManual();
+      const poolEN = [...new Set([...getBancoEfectivo("Cabina 1"), ...getBancoEfectivo("Cabina 2")])]
+        .filter(e => getEtiquetaTT(e, manual) === "Enfrentamientos");
+      const enf = pickSinRepetir(poolEN, Math.min(1, poolEN.length), i, "Cabina 1")[0] || "Enfrentamientos";
+      c1.push(enf); c2.push(enf);
       continue;
     }
 
@@ -1241,6 +1257,13 @@ function _seleccionarEjercicio(nombre) {
   _dropdownTd.dataset.nombre = nombre;
   _dropdownTd.innerHTML = renderCeldaHTML(fila, nombre);
   if (planActual && planActual.filas[fila]) planActual.filas[fila][dia] = nombre;
+  // Día de Enfrentamientos: las dos cabinas van con el mismo ejercicio
+  if (fila.startsWith("Cabina") && planActual?.filas?.["T.T."]?.[dia] === "Enfrentamientos") {
+    const otra = fila === "Cabina 1" ? "Cabina 2" : "Cabina 1";
+    const tdOtra = _dropdownTd.closest("table")?.querySelector(`td.editable[data-fila="${otra}"][data-dia="${dia}"]`);
+    if (tdOtra) { tdOtra.dataset.nombre = nombre; tdOtra.innerHTML = renderCeldaHTML(otra, nombre); }
+    if (planActual.filas[otra]) planActual.filas[otra][dia] = nombre;
+  }
   cerrarDropdown();
 }
 
