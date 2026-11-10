@@ -1068,16 +1068,32 @@ function editarCelda(td) {
   const search = document.getElementById("dropdown-search");
   const lista  = document.getElementById("dropdown-list");
 
-  // Posición debajo de la celda
   const rect = td.getBoundingClientRect();
-  panel.style.top   = (rect.bottom + 4) + "px";
-  panel.style.left  = rect.left + "px";
   panel.style.width = Math.max(240, rect.width) + "px";
   panel.style.display = "block";
 
   search.value = "";
   _renderDropdownList(banco, "");
-  search.focus();
+
+  // Medir el panel ya renderizado y ubicarlo sin que se salga de la pantalla:
+  // abajo de la celda si entra; si no, arriba.
+  const margen = 8;
+  const panelH = panel.offsetHeight;
+  const panelW = panel.offsetWidth;
+  const espacioAbajo  = window.innerHeight - rect.bottom;
+  const espacioArriba = rect.top;
+  let top = (espacioAbajo >= panelH + margen || espacioAbajo >= espacioArriba)
+    ? rect.bottom + 4
+    : rect.top - panelH - 4;
+  if (top + panelH > window.innerHeight - margen) top = window.innerHeight - panelH - margen;
+  if (top < margen) top = margen;
+  let left = rect.left;
+  if (left + panelW > window.innerWidth - margen) left = window.innerWidth - panelW - margen;
+  if (left < margen) left = margen;
+  panel.style.top  = top + "px";
+  panel.style.left = left + "px";
+
+  search.focus({ preventScroll: true });
 
   search.oninput = () => _renderDropdownList(banco, search.value);
 
