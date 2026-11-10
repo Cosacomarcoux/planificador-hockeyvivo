@@ -285,6 +285,31 @@ td.editing input { width: 100%; border: none; outline: 2px solid var(--verde); p
 /* ─── PLANES GUARDADOS ─────────────────────────────────────────────────────── */
 .planes-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 1rem; }
 .planes-header .panel-title { margin-bottom: 0; }
+/* Rotaciones / modalidades */
+.rot-intro { font-size: 13px; color: var(--gris); margin: -0.75rem 0 1.25rem; line-height: 1.6; }
+.rot-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 14px; }
+.rot-card { border: 1px solid var(--verde-borde); border-radius: 10px; padding: 12px; background: #fbfdfc; }
+.rot-card-head { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 8px; }
+.rot-card-nombre { font-weight: 700; color: var(--verde); font-size: 15px; }
+.rot-card-nombre-input { font-weight: 700; color: var(--verde); font-size: 14px; border: 1px solid var(--verde-borde); border-radius: 6px; padding: 3px 7px; font-family: inherit; min-width: 0; flex: 1; }
+.rot-card-acc { display: flex; gap: 4px; flex-shrink: 0; }
+.rot-mini-btn { font-size: 11px; padding: 3px 8px; border-radius: 6px; cursor: pointer; border: 1px solid var(--verde-borde); background: white; color: var(--verde); }
+.rot-mini-btn.del { border-color: #fca5a5; color: #b91c1c; background: #fff5f5; }
+.rot-dia { display: grid; grid-template-columns: 34px 1fr 1fr; gap: 5px; align-items: center; margin-bottom: 5px; }
+.rot-dia b { font-size: 12px; color: var(--gris); }
+.rot-dia select { width: 100%; border: 1px solid var(--verde-borde); border-radius: 6px; padding: 4px 5px; font-size: 12px; font-family: inherit; background: white; min-width: 0; }
+.rot-dia select.enf { background: #fde2e2; border-color: #fca5a5; color: #991b1b; }
+.rot-nueva { margin-top: 1.25rem; border-top: 1px solid var(--verde-borde); padding-top: 1rem; }
+.rot-nueva-titulo { font-weight: 600; font-size: 13px; margin-bottom: 8px; }
+.rot-nueva-fila { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.rot-nueva-fila .banco-add-input { min-width: 200px; }
+.rot-nueva-base { font-size: 12px; color: var(--gris); display: flex; align-items: center; gap: 5px; }
+.rot-preview { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; align-items: stretch; }
+.rot-prev-dia { display: flex; flex-direction: column; font-size: 11px; background: var(--verde-claro); border-radius: 7px; padding: 5px 8px; min-width: 88px; line-height: 1.35; }
+.rot-prev-dia b { color: var(--verde); }
+.rot-prev-tt { color: var(--gris); }
+.rot-prev-tt.enf { color: #b91c1c; font-weight: 600; }
+.rot-prev-edit { font-size: 11px; background: none; border: 1px dashed var(--verde-borde); border-radius: 7px; color: var(--verde); cursor: pointer; padding: 5px 9px; }
 /* Sugerencia de próxima semana */
 .sugerencia { background: var(--verde-claro); border: 1px solid var(--verde-borde); border-radius: 10px; padding: 12px 14px; margin-bottom: 18px; font-size: 13px; line-height: 1.6; }
 .sugerencia .sug-fila { display: flex; gap: 6px; flex-wrap: wrap; }
@@ -328,6 +353,7 @@ td.editing input { width: 100%; border: none; outline: 2px solid var(--verde); p
   <div class="nav-links" id="nav-links">
     <button class="nav-btn active-screen" data-screen="screen-nueva" onclick="navegar('screen-nueva')">Nueva planificación</button>
     <button class="nav-btn" data-screen="screen-planes" onclick="navegar('screen-planes')">Planes guardados</button>
+    <button class="nav-btn" data-screen="screen-rotaciones" onclick="navegar('screen-rotaciones')">🔁 Rotaciones</button>
     <button class="nav-btn" onclick="abrirConfig()">⚙️ Configuración</button>
     <button class="nav-btn" onclick="abrirBanco()">🗂️ Banco</button>
   </div>
@@ -341,12 +367,8 @@ td.editing input { width: 100%; border: none; outline: 2px solid var(--verde); p
       <div id="sugerencia-semana"></div>
       <div class="form-group">
         <label class="form-label">Semana del mesociclo</label>
-        <div class="seg-group" id="seg-semana">
-          <button class="seg-btn" data-val="Semana 1" onclick="selSemana(this)">1</button>
-          <button class="seg-btn" data-val="Semana 2" onclick="selSemana(this)">2</button>
-          <button class="seg-btn" data-val="Semana 3" onclick="selSemana(this)">3</button>
-          <button class="seg-btn" data-val="Semana 4" onclick="selSemana(this)">4</button>
-        </div>
+        <div class="seg-group" id="seg-semana"></div>
+        <div id="rotacion-preview" class="rot-preview"></div>
       </div>
       <div class="form-group">
         <label class="form-label">Fase</label>
@@ -423,6 +445,26 @@ td.editing input { width: 100%; border: none; outline: 2px solid var(--verde); p
       </div>
       <div id="modo-lista">
         <div id="lista-planes-contenido"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 4: ROTACIONES / MODALIDADES DE SEMANA -->
+<div id="screen-rotaciones" class="screen">
+  <div class="screen-container">
+    <div class="panel-card">
+      <h2 class="panel-title">Rotaciones de la semana</h2>
+      <p class="rot-intro">Elegí qué Grupo y qué Trabajo Técnico va cada día. Los cambios se guardan solos.
+        El Mood se calcula: <b>EMOM</b> los días de Enfrentamientos, <b>INTERVALO</b> el resto.</p>
+      <div id="rotaciones-lista" class="rot-grid"></div>
+      <div class="rot-nueva">
+        <div class="rot-nueva-titulo">➕ Nueva modalidad</div>
+        <div class="rot-nueva-fila">
+          <input id="rot-nueva-nombre" class="banco-add-input" type="text" placeholder="Ej: Semana de técnica, Semana de habilidades...">
+          <label class="rot-nueva-base">Copiar de <select id="rot-nueva-base" class="banco-tt-select" style="max-width:none"></select></label>
+          <button class="banco-add-btn" onclick="crearModalidad()">Crear</button>
+        </div>
       </div>
     </div>
   </div>
@@ -808,6 +850,41 @@ const TT_SEMANA = {
   4: ["Dinámica media","Dinámica media","Técnica","Dinámica corta","Enfrentamientos"]
 };
 
+// ─── MODALIDADES DE SEMANA (rotaciones configurables) ────────────────────────
+// Cada modalidad define, para Lunes a Viernes, el Grupo y el T.T. Las semanas
+// 1-4 vienen de fábrica (editables y restaurables); se pueden crear otras
+// (ej. "Semana de técnica"). Se guardan en hv_rotaciones y sincronizan.
+const GRUPOS_OPCIONES = ["Core","Upper","Lower","Full Body"];
+
+function _modalidadesDefault() {
+  return [1, 2, 3, 4].map(n => ({
+    id: String(n), nombre: `Semana ${n}`, base: true,
+    grupos: [...GRUPOS_SEMANA[n]], tts: [...TT_SEMANA[n]]
+  }));
+}
+
+function getModalidades() {
+  const defs = _modalidadesDefault();
+  let guardadas = [];
+  try { guardadas = (JSON.parse(localStorage.getItem("hv_rotaciones") || "{}").modalidades) || []; } catch {}
+  const valida = m => m && m.nombre && Array.isArray(m.grupos) && m.grupos.length === 5 && Array.isArray(m.tts) && m.tts.length === 5;
+  // Las 4 de fábrica siempre existen (con la versión editada si la hay); después las creadas
+  const base = defs.map(d => { const g = guardadas.find(x => x.id === d.id && valida(x)); return g ? { ...g, base: true, nombre: d.nombre } : d; });
+  const propias = guardadas.filter(m => !m.base && valida(m) && !defs.some(d => d.id === m.id));
+  return [...base, ...propias];
+}
+
+function guardarModalidades(lista) {
+  localStorage.setItem("hv_rotaciones", JSON.stringify({ modalidades: lista }));
+}
+
+function getModalidad(nombre) {
+  const mods = getModalidades();
+  return mods.find(m => m.nombre === nombre)
+    || mods.find(m => m.id === String(parseInt(String(nombre || "").replace(/\D/g, ""))))
+    || mods[0];
+}
+
 // ─── ETIQUETAS DE T.T. ───────────────────────────────────────────────────────
 // Cada ejercicio de Técnicos / Espacio 1 / Cabina 1 / Cabina 2 puede tener una
 // etiqueta de T.T. Al generar, cada día usa los ejercicios con la etiqueta de su
@@ -1069,9 +1146,9 @@ function getBancoParaFila(label, diaIdx) {
 
 // ─── GENERACIÓN DEL PLAN ─────────────────────────────────────────────────────
 function generarFilas() {
-  const num = parseInt(estado.semana.replace("Semana ", ""));
-  const grupos = GRUPOS_SEMANA[num];
-  const tts    = TT_SEMANA[num];
+  const mod    = getModalidad(estado.semana);
+  const grupos = [...mod.grupos];
+  const tts    = [...mod.tts];
   const moods  = tts.map(tt => tt === "Enfrentamientos" ? "EMOM" : "INTERVALO");
 
   const f1=[], f2=[], f3=[], f4=[];
@@ -1573,6 +1650,7 @@ function navegar(screenId) {
   document.getElementById('nav-links')?.classList.remove('open');
   if (screenId === 'screen-planes') iniciarPlanesScreen();
   if (screenId === 'screen-nueva') prepararFormNueva();
+  if (screenId === 'screen-rotaciones') renderRotaciones();
 }
 
 function toggleMenu() {
@@ -1586,6 +1664,31 @@ let _formFase = null;
 function selSemana(btn) {
   _formSemana = btn.dataset.val;
   document.querySelectorAll('#seg-semana .seg-btn').forEach(b => b.classList.toggle('active', b === btn));
+  _renderRotacionPreview();
+}
+
+// Botones de semana: 1-4 + las modalidades creadas
+function renderSegSemana() {
+  const cont = document.getElementById('seg-semana');
+  if (!cont) return;
+  const mods = getModalidades();
+  if (_formSemana && !mods.some(m => m.nombre === _formSemana)) _formSemana = null;
+  cont.innerHTML = mods.map(m =>
+    `<button class="seg-btn${m.nombre === _formSemana ? ' active' : ''}" data-val="${_attr(m.nombre)}" onclick="selSemana(this)">${m.base ? m.id : m.nombre}</button>`
+  ).join('');
+  _renderRotacionPreview();
+}
+
+// Debajo de los botones: cómo queda la semana elegida (Grupo y T.T. por día)
+function _renderRotacionPreview() {
+  const box = document.getElementById('rotacion-preview');
+  if (!box) return;
+  if (!_formSemana) { box.innerHTML = ''; return; }
+  const m = getModalidad(_formSemana);
+  const cortos = ["Lun","Mar","Mié","Jue","Vie"];
+  box.innerHTML = cortos.map((d, i) =>
+    `<div class="rot-prev-dia"><b>${d}</b><span>${m.grupos[i]}</span><span class="rot-prev-tt${m.tts[i] === 'Enfrentamientos' ? ' enf' : ''}">${m.tts[i]}</span></div>`
+  ).join('') + `<button class="rot-prev-edit" onclick="navegar('screen-rotaciones')">✏️ Editar rotaciones</button>`;
 }
 
 function selFase(btn) {
@@ -1665,7 +1768,11 @@ function _lunesDe(fecha) {           // lunes de la semana de esa fecha
 function calcularSugerencia() {
   const ultimo = ultimoPlanGuardado();
   if (!ultimo) return null;
-  const nSem = parseInt(String(ultimo.semana || '').replace(/\D/g, '')) || 0;
+  // La secuencia 1→2→3→4 sigue a la última semana NUMERADA (si en el medio hubo
+  // una modalidad especial, como "Semana de técnica", no corta la secuencia)
+  const planes = ordenarPlanesRecientes(JSON.parse(localStorage.getItem('hv_planes') || '[]'));
+  const ultNum = planes.find(p => /^Semana [1-4]$/.test(p.semana || ''));
+  const nSem = ultNum ? parseInt(ultNum.semana.replace(/\D/g, '')) : 0;
   const iFase = FASES_ORDEN.indexOf(ultimo.fase);
   const semana = nSem ? `Semana ${(nSem % 4) + 1}` : null;
   const fase = iFase >= 0 ? FASES_ORDEN[(iFase + 1) % 3] : null;
@@ -1713,6 +1820,7 @@ function aplicarSugerencia(silencioso) {
 // Al entrar a "Nueva planificación": mostrar la sugerencia y, si el formulario
 // está vacío, dejarla precargada (se puede cambiar igual).
 function prepararFormNueva() {
+  renderSegSemana();
   renderSugerencia();
   const fi = document.getElementById('form-fecha-inicio');
   if (!_formSemana && !_formFase && !(fi && fi.value)) aplicarSugerencia(true);
@@ -1816,6 +1924,86 @@ function _renderListaView() {
       </div>
     </div>`;
   }).join('');
+}
+
+// ─── PANTALLA ROTACIONES ─────────────────────────────────────────────────────
+function renderRotaciones() {
+  const cont = document.getElementById('rotaciones-lista');
+  if (!cont) return;
+  const mods = getModalidades();
+  const defs = _modalidadesDefault();
+  const dias = ["Lun","Mar","Mié","Jue","Vie"];
+  const opts = (lista, val) => lista.map(o => `<option${o === val ? ' selected' : ''}>${o}</option>`).join('');
+  cont.innerHTML = mods.map(m => {
+    const def = defs.find(d => d.id === m.id);
+    const modificada = def && (JSON.stringify(def.grupos) !== JSON.stringify(m.grupos) || JSON.stringify(def.tts) !== JSON.stringify(m.tts));
+    const head = m.base
+      ? `<span class="rot-card-nombre">${m.nombre}</span>
+         <div class="rot-card-acc">${modificada ? `<button class="rot-mini-btn" onclick="restaurarModalidad('${m.id}')" title="Volver a la rotación original">↺ Original</button>` : ''}</div>`
+      : `<input class="rot-card-nombre-input" value="${_attr(m.nombre)}" onchange="renombrarModalidad('${m.id}', this.value)" title="Tocá para cambiar el nombre">
+         <div class="rot-card-acc"><button class="rot-mini-btn del" onclick="eliminarModalidad('${m.id}')">🗑️</button></div>`;
+    const filas = dias.map((d, i) => `<div class="rot-dia"><b>${d}</b>
+        <select onchange="cambiarRotacion('${m.id}','grupos',${i},this.value)">${opts(GRUPOS_OPCIONES, m.grupos[i])}</select>
+        <select class="${m.tts[i] === 'Enfrentamientos' ? 'enf' : ''}" onchange="cambiarRotacion('${m.id}','tts',${i},this.value)">${opts(ETIQUETAS_TT, m.tts[i])}</select>
+      </div>`).join('');
+    return `<div class="rot-card"><div class="rot-card-head">${head}</div>${filas}</div>`;
+  }).join('');
+  const sel = document.getElementById('rot-nueva-base');
+  if (sel) sel.innerHTML = mods.map(m => `<option value="${m.id}">${m.nombre}</option>`).join('');
+}
+
+function _actualizarModalidad(id, fn) {
+  const mods = getModalidades();
+  const m = mods.find(x => x.id === id);
+  if (!m) return;
+  fn(m, mods);
+  guardarModalidades(mods);
+  renderRotaciones();
+}
+
+function cambiarRotacion(id, campo, dia, valor) {
+  _actualizarModalidad(id, m => { m[campo][dia] = valor; });
+  toast('✓ Rotación guardada');
+}
+
+function restaurarModalidad(id) {
+  const def = _modalidadesDefault().find(d => d.id === id);
+  if (!def || !confirm(`¿Volver ${def.nombre} a la rotación original?`)) return;
+  _actualizarModalidad(id, m => { m.grupos = [...def.grupos]; m.tts = [...def.tts]; });
+  toast(`✓ ${def.nombre} restaurada`);
+}
+
+function crearModalidad() {
+  const inp = document.getElementById('rot-nueva-nombre');
+  const nombre = (inp?.value || '').trim();
+  if (!nombre) { toast('Escribí un nombre para la modalidad'); return; }
+  const mods = getModalidades();
+  if (mods.some(m => m.nombre.toLowerCase() === nombre.toLowerCase())) { toast('Ya existe una con ese nombre'); return; }
+  const base = mods.find(m => m.id === document.getElementById('rot-nueva-base')?.value) || mods[0];
+  mods.push({ id: 'm' + Date.now(), nombre, grupos: [...base.grupos], tts: [...base.tts] });
+  guardarModalidades(mods);
+  inp.value = '';
+  renderRotaciones();
+  toast(`✓ "${nombre}" creada — ajustá los días`);
+}
+
+function renombrarModalidad(id, nombre) {
+  nombre = (nombre || '').trim();
+  const mods = getModalidades();
+  if (!nombre || mods.some(m => m.id !== id && m.nombre.toLowerCase() === nombre.toLowerCase())) {
+    toast(nombre ? 'Ya existe una con ese nombre' : 'El nombre no puede quedar vacío');
+    renderRotaciones(); return;
+  }
+  _actualizarModalidad(id, m => { if (_formSemana === m.nombre) _formSemana = nombre; m.nombre = nombre; });
+  toast('✓ Nombre actualizado');
+}
+
+function eliminarModalidad(id) {
+  const m = getModalidades().find(x => x.id === id);
+  if (!m || !confirm(`¿Eliminar la modalidad "${m.nombre}"?\nLos planes ya guardados con ella no se borran.`)) return;
+  guardarModalidades(getModalidades().filter(x => x.id !== id));
+  renderRotaciones();
+  toast('✓ Modalidad eliminada');
 }
 
 // ─── ADMIN BANCO DE EJERCICIOS ───────────────────────────────────────────────
@@ -2110,7 +2298,7 @@ document.addEventListener("keydown", e => {
 // El estado compartido (planes, intenciones, banco, memoria) vive en el
 // servidor. Al abrir, se descarga y pisa lo local; cada cambio local se sube
 // automáticamente. Si no hay conexión, la app sigue funcionando local.
-const CLAVES_SYNC = ["hv_planes","hv_intenciones","hv_hist_dia","hv_banco_extra","hv_banco_eliminados","hv_ejercicio_detalle","hv_config_filas","hv_notas_fase","hv_etiquetas_tt"];
+const CLAVES_SYNC = ["hv_planes","hv_intenciones","hv_hist_dia","hv_banco_extra","hv_banco_eliminados","hv_ejercicio_detalle","hv_config_filas","hv_notas_fase","hv_etiquetas_tt","hv_rotaciones"];
 const _lsSetNativo = Storage.prototype.setItem.bind(localStorage);
 const _syncTimers = {};
 
