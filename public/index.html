@@ -285,6 +285,19 @@ td.editing input { width: 100%; border: none; outline: 2px solid var(--verde); p
 /* ─── PLANES GUARDADOS ─────────────────────────────────────────────────────── */
 .planes-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 1rem; }
 .planes-header .panel-title { margin-bottom: 0; }
+/* Sugerencia de próxima semana */
+.sugerencia { background: var(--verde-claro); border: 1px solid var(--verde-borde); border-radius: 10px; padding: 12px 14px; margin-bottom: 18px; font-size: 13px; line-height: 1.6; }
+.sugerencia .sug-fila { display: flex; gap: 6px; flex-wrap: wrap; }
+.sugerencia .sug-label { color: var(--gris); min-width: 92px; }
+.sugerencia .sug-toca { font-weight: 700; color: var(--verde); }
+.sugerencia .sug-btn { margin-top: 8px; padding: 6px 12px; font-size: 12px; border-radius: 6px; cursor: pointer; background: var(--verde); color: white; border: none; font-weight: 600; }
+/* Lista de planes */
+.plan-li { cursor: pointer; }
+.plan-li:hover { background: var(--verde-claro); }
+.plan-li .pl-fechas { font-size: 15px; font-weight: 700; color: var(--negro); display: block; }
+.plan-li .pl-titulo { font-size: 13px; color: var(--verde); font-weight: 600; display: block; }
+.plan-li .pl-meta { font-size: 12px; color: var(--gris); }
+.plan-li .pl-ultimo { font-size: 10px; background: var(--verde); color: white; border-radius: 8px; padding: 1px 7px; margin-left: 6px; vertical-align: 2px; font-weight: 600; }
 .modo-toggle { display: flex; gap: 4px; }
 .modo-btn { padding: 7px 14px; border: 1.5px solid var(--verde-borde); border-radius: 8px; background: var(--verde-claro); color: var(--verde); font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.12s; }
 .modo-btn.active { background: var(--verde); color: white; border-color: var(--verde); }
@@ -325,6 +338,7 @@ td.editing input { width: 100%; border: none; outline: 2px solid var(--verde); p
   <div class="screen-container">
     <div class="panel-card">
       <h2 class="panel-title">Nueva planificación</h2>
+      <div id="sugerencia-semana"></div>
       <div class="form-group">
         <label class="form-label">Semana del mesociclo</label>
         <div class="seg-group" id="seg-semana">
@@ -372,7 +386,7 @@ td.editing input { width: 100%; border: none; outline: 2px solid var(--verde); p
       <div id="plan-nota-fase" class="nota-fase" style="display:none"></div>
       <div id="plan-tabla-container"></div>
       <div class="action-btns" style="margin-top:16px">
-        <button class="action-btn primary" onclick="guardarPlan()">💾 Guardar</button>
+        <button class="action-btn primary" id="btn-guardar-plan" onclick="guardarPlan()">💾 Guardar</button>
         <button class="action-btn" onclick="copiarTablaCompleta()">📲 Copiar todo</button>
         <button class="action-btn" onclick="exportarPDF()">🖨️ PDF</button>
         <button class="action-btn" onclick="toggleInts()">👁 Intenciones</button>
@@ -389,8 +403,8 @@ td.editing input { width: 100%; border: none; outline: 2px solid var(--verde); p
       <div class="planes-header">
         <h2 class="panel-title">Planes guardados</h2>
         <div class="modo-toggle">
-          <button class="modo-btn active" id="modo-libro-btn" onclick="switchModoPlanes('libro')">📖 Libro</button>
-          <button class="modo-btn" id="modo-lista-btn" onclick="switchModoPlanes('lista')">☰ Lista</button>
+          <button class="modo-btn active" id="modo-lista-btn" onclick="switchModoPlanes('lista')">☰ Lista</button>
+          <button class="modo-btn" id="modo-libro-btn" onclick="switchModoPlanes('libro')">📖 Libro</button>
         </div>
       </div>
       <div class="planes-filtros">
@@ -399,7 +413,7 @@ td.editing input { width: 100%; border: none; outline: 2px solid var(--verde); p
         <button class="action-btn" onclick="aplicarFiltroPlanesScreen()">Filtrar</button>
         <button class="action-btn" onclick="limpiarFiltroPlanesScreen()">✕ Limpiar</button>
       </div>
-      <div id="modo-libro">
+      <div id="modo-libro" style="display:none">
         <div class="libro-nav">
           <button class="libro-nav-btn" id="libro-prev" onclick="navLibro(-1)">← Anterior</button>
           <span id="libro-contador" class="libro-contador"></span>
@@ -407,7 +421,7 @@ td.editing input { width: 100%; border: none; outline: 2px solid var(--verde); p
         </div>
         <div id="libro-contenido" class="libro-contenido"></div>
       </div>
-      <div id="modo-lista" style="display:none">
+      <div id="modo-lista">
         <div id="lista-planes-contenido"></div>
       </div>
     </div>
@@ -1376,9 +1390,7 @@ function copiarTablaCompleta() {
 function guardarPlan() {
   if (!planActual) return;
   const planes = JSON.parse(localStorage.getItem("hv_planes") || "[]");
-  const id = Date.now();
-  planes.unshift({
-    id,
+  const datos = {
     titulo:      planActual.titulo,
     fecha:       planActual.fecha,
     fechaInicio: planActual.fechaInicio || null,
@@ -1388,12 +1400,27 @@ function guardarPlan() {
     fase:        estado.fase,
     foco:        estado.foco,
     filas:       planActual.filas
-  });
+  };
+  // Si el plan ya estaba guardado (se abrió desde Planes guardados o ya se guardó
+  // una vez), se actualiza ese mismo plan en vez de crear uno nuevo.
+  const idx = planActual.id ? planes.findIndex(p => p.id === planActual.id) : -1;
+  if (idx >= 0) {
+    planes[idx] = { ...planes[idx], ...datos, editado: new Date().toLocaleDateString('es-AR') };
+  } else {
+    planActual.id = Date.now();
+    planes.unshift({ id: planActual.id, ...datos });
+  }
   localStorage.setItem("hv_planes", JSON.stringify(planes));
   // Registrar en la memoria anti-repetición: estos ejercicios no volverán a
   // proponerse el mismo día de la semana durante las próximas 3 semanas.
   registrarHistorialPlan();
-  toast("✓ Plan guardado (y ejercicios registrados en la memoria)");
+  _actualizarBotonGuardar();
+  toast(idx >= 0 ? "✓ Cambios guardados en el mismo plan" : "✓ Plan guardado");
+}
+
+function _actualizarBotonGuardar() {
+  const b = document.getElementById("btn-guardar-plan");
+  if (b) b.textContent = planActual?.id ? "💾 Guardar cambios" : "💾 Guardar";
 }
 
 // ─── HISTORIAL ───────────────────────────────────────────────────────────────
@@ -1494,7 +1521,7 @@ function cargarPlan(id) {
   estado.semana = p.semana;
   estado.fase   = p.fase;
   estado.foco   = p.foco;
-  planActual = { filas: p.filas, titulo: p.titulo, fecha: p.fecha, fechaInicio: p.fechaInicio || null, fechaFin: p.fechaFin || null, rangoFechas: p.rangoFechas || null };
+  planActual = { id: p.id, filas: JSON.parse(JSON.stringify(p.filas)), titulo: p.titulo, fecha: p.fecha, fechaInicio: p.fechaInicio || null, fechaFin: p.fechaFin || null, rangoFechas: p.rangoFechas || null };
   mostrarPlanEnPantalla();
   navegar('screen-plan');
 }
@@ -1545,6 +1572,7 @@ function navegar(screenId) {
   });
   document.getElementById('nav-links')?.classList.remove('open');
   if (screenId === 'screen-planes') iniciarPlanesScreen();
+  if (screenId === 'screen-nueva') prepararFormNueva();
 }
 
 function toggleMenu() {
@@ -1601,10 +1629,94 @@ function mostrarPlanEnPantalla() {
   if (notaEl) { notaEl.textContent = notaFase || ''; notaEl.style.display = notaFase ? '' : 'none'; }
   const cont = document.getElementById('plan-tabla-container');
   if (cont) cont.innerHTML = renderTabla(planActual.filas);
+  _actualizarBotonGuardar();
 }
 
 // ─── PANTALLA PLANES GUARDADOS ────────────────────────────────────────────────
-let _modoPlanes = 'libro';
+let _modoPlanes = 'lista';
+
+// Más reciente primero: por fecha de inicio de la semana; si no tiene fechas,
+// por el día en que se guardó.
+function _clavePlan(p) {
+  return p.fechaInicio || (p.id ? new Date(p.id).toISOString().slice(0, 10) : "");
+}
+function ordenarPlanesRecientes(planes) {
+  return [...planes].sort((a, b) => _clavePlan(b).localeCompare(_clavePlan(a)) || (b.id || 0) - (a.id || 0));
+}
+function ultimoPlanGuardado() {
+  const planes = JSON.parse(localStorage.getItem('hv_planes') || '[]');
+  return planes.length ? ordenarPlanesRecientes(planes)[0] : null;
+}
+
+// ─── SUGERENCIA: QUÉ SEMANA TOCA ─────────────────────────────────────────────
+// Semana del mesociclo: 1→2→3→4→1 · Fase: Fuerza→Potencia→Pliometría→Fuerza
+const FASES_ORDEN = ["Semana A – Fuerza", "Semana B – Potencia", "Semana C – Pliometría"];
+const FASE_ICONO = { "Fuerza": "💪", "Potencia": "⚡", "Pliometría": "🦘" };
+const _iso = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const _ddmm = iso => iso ? iso.slice(8, 10) + '/' + iso.slice(5, 7) : '';
+const _faseCorta = f => (f || '').split('–').pop().trim();
+
+function _lunesDe(fecha) {           // lunes de la semana de esa fecha
+  const d = new Date(fecha); d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+  return d;
+}
+
+function calcularSugerencia() {
+  const ultimo = ultimoPlanGuardado();
+  if (!ultimo) return null;
+  const nSem = parseInt(String(ultimo.semana || '').replace(/\D/g, '')) || 0;
+  const iFase = FASES_ORDEN.indexOf(ultimo.fase);
+  const semana = nSem ? `Semana ${(nSem % 4) + 1}` : null;
+  const fase = iFase >= 0 ? FASES_ORDEN[(iFase + 1) % 3] : null;
+
+  // Fechas: el lunes siguiente a la última semana planificada; si ese lunes ya
+  // pasó, la semana actual (o la próxima si es fin de semana).
+  const hoy = new Date();
+  let lunes = _lunesDe(hoy);
+  if (hoy.getDay() === 0 || hoy.getDay() === 6) lunes.setDate(lunes.getDate() + 7);
+  if (ultimo.fechaInicio) {
+    const tras = _lunesDe(new Date(ultimo.fechaInicio + 'T00:00:00'));
+    tras.setDate(tras.getDate() + 7);
+    if (tras > lunes) lunes = tras;
+  }
+  const viernes = new Date(lunes); viernes.setDate(viernes.getDate() + 4);
+  return { ultimo, semana, fase, fechaInicio: _iso(lunes), fechaFin: _iso(viernes) };
+}
+
+function renderSugerencia() {
+  const box = document.getElementById('sugerencia-semana');
+  if (!box) return;
+  const s = calcularSugerencia();
+  if (!s) { box.innerHTML = ''; return; }
+  const u = s.ultimo;
+  const fU = _faseCorta(u.fase), fS = _faseCorta(s.fase);
+  box.innerHTML = `<div class="sugerencia">
+    <div class="sug-fila"><span class="sug-label">Anterior:</span>
+      <span>${u.semana || '—'} · ${FASE_ICONO[fU] || ''} ${fU || '—'}${u.rangoFechas ? ' · ' + u.rangoFechas : ''}</span></div>
+    <div class="sug-fila"><span class="sug-label">Te toca ahora:</span>
+      <span class="sug-toca">${s.semana || '—'} · ${FASE_ICONO[fS] || ''} ${fS || '—'} · ${_ddmm(s.fechaInicio)} al ${_ddmm(s.fechaFin)}</span></div>
+    <button class="sug-btn" onclick="aplicarSugerencia()">Usar esta semana</button>
+  </div>`;
+}
+
+function aplicarSugerencia(silencioso) {
+  const s = calcularSugerencia();
+  if (!s) return;
+  if (s.semana) { const b = document.querySelector(`#seg-semana .seg-btn[data-val="${s.semana}"]`); if (b) selSemana(b); }
+  if (s.fase)   { const b = document.querySelector(`#seg-fase .seg-btn[data-val="${s.fase}"]`);     if (b) selFase(b); }
+  const fi = document.getElementById('form-fecha-inicio'); if (fi) fi.value = s.fechaInicio;
+  const ff = document.getElementById('form-fecha-fin');    if (ff) ff.value = s.fechaFin;
+  if (!silencioso) toast('✓ Cargada la semana que toca');
+}
+
+// Al entrar a "Nueva planificación": mostrar la sugerencia y, si el formulario
+// está vacío, dejarla precargada (se puede cambiar igual).
+function prepararFormNueva() {
+  renderSugerencia();
+  const fi = document.getElementById('form-fecha-inicio');
+  if (!_formSemana && !_formFase && !(fi && fi.value)) aplicarSugerencia(true);
+}
 let _revistaPlanesActuales = [];
 let _revistaIdx = 0;
 
@@ -1620,13 +1732,7 @@ function iniciarPlanesScreen() {
       return true;
     });
   }
-  planes.sort((a, b) => {
-    if (!a.fechaInicio && !b.fechaInicio) return 0;
-    if (!a.fechaInicio) return 1;
-    if (!b.fechaInicio) return -1;
-    return a.fechaInicio.localeCompare(b.fechaInicio);
-  });
-  _revistaPlanesActuales = planes;
+  _revistaPlanesActuales = ordenarPlanesRecientes(planes);
   _revistaIdx = 0;
   if (_modoPlanes === 'libro') _renderLibroView();
   else _renderListaView();
@@ -1694,16 +1800,19 @@ function _renderListaView() {
     div.innerHTML = '<div class="empty-hist">No hay planes en este rango de fechas.</div>';
     return;
   }
-  div.innerHTML = _revistaPlanesActuales.map(p => {
-    const rango = p.rangoFechas ? ' · ' + p.rangoFechas : '';
-    return `<div class="hist-item" id="histli-${p.id}">
+  div.innerHTML = _revistaPlanesActuales.map((p, i) => {
+    const fechas = p.rangoFechas || `Guardado el ${p.fecha}`;
+    const meta = [p.foco && p.foco !== 'No, semana estándar' ? 'Foco: ' + p.foco : '', p.editado ? 'Editado el ' + p.editado : '']
+      .filter(Boolean).join(' · ');
+    return `<div class="hist-item plan-li" id="histli-${p.id}" onclick="cargarPlan(${p.id})">
       <div class="hist-item-info">
-        <strong>${p.titulo}${rango}</strong>
-        <span>${p.fecha} · Foco: ${p.foco}</span>
+        <span class="pl-fechas">${fechas}${p.id === ultimoPlanGuardado()?.id ? '<span class="pl-ultimo">Última</span>' : ''}</span>
+        <span class="pl-titulo">${p.titulo}</span>
+        ${meta ? `<span class="pl-meta">${meta}</span>` : ''}
       </div>
       <div class="hist-item-btns">
-        <button class="hist-load" onclick="cargarPlan(${p.id})">Cargar</button>
-        <button class="hist-del" onclick="if(confirm('¿Borrar?'))borrarPlan(${p.id})">✕</button>
+        <button class="hist-load" onclick="event.stopPropagation();cargarPlan(${p.id})">Abrir</button>
+        <button class="hist-del" onclick="event.stopPropagation();if(confirm('¿Borrar este plan?'))borrarPlan(${p.id})">✕</button>
       </div>
     </div>`;
   }).join('');
