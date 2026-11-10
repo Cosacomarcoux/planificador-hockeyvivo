@@ -1069,13 +1069,19 @@ function generarFilas() {
     const esp = pickPorTT(getBancoEfectivo("Espacio 1"), 1, i, "Espacio 1", tt, usadosSemana["Espacio 1"]);
     e1.push(esp[0]||"");
 
+    usadosSemana["Técnicos"].push(...tec);
+    usadosSemana["Espacio 1"].push(...esp);
+
+    // Día de Enfrentamientos: las dos cabinas son "Enfrentamientos", sin elegir del banco
+    if (tt === "Enfrentamientos") {
+      c1.push("Enfrentamientos"); c2.push("Enfrentamientos");
+      continue;
+    }
+
     const selCab1 = pickPorTT(getBancoEfectivo("Cabina 1"), 1, i, "Cabina 1", tt, usadosSemana["Cabina 1"]);
     const bancoCab2 = getBancoEfectivo("Cabina 2").filter(c => c !== (selCab1[0] || ""));
     const selCab2 = pickPorTT(bancoCab2.length ? bancoCab2 : getBancoEfectivo("Cabina 2"), 1, i, "Cabina 2", tt, usadosSemana["Cabina 2"]);
     c1.push(selCab1[0]||""); c2.push(selCab2[0]||"");
-
-    usadosSemana["Técnicos"].push(...tec);
-    usadosSemana["Espacio 1"].push(...esp);
     usadosSemana["Cabina 1"].push(...selCab1);
     usadosSemana["Cabina 2"].push(...selCab2);
   }
