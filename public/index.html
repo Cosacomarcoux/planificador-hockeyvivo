@@ -138,6 +138,17 @@ td.editing input { width: 100%; border: none; outline: 2px solid var(--verde); p
 .banco-add-input:focus { border-color: var(--verde); }
 .banco-add-btn { padding: 7px 14px; background: var(--verde); color: white; border: none; border-radius: 6px; font-size: 12px; cursor: pointer; font-weight: 500; white-space: nowrap; }
 .banco-add-btn:hover { background: #155e39; }
+/* Etiquetas de T.T. */
+.tt-badge { display: inline-block; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 8px; margin-right: 5px; vertical-align: 1px; letter-spacing: .3px; }
+.tt-TC { background: #e0ecff; color: #1e40af; }
+.tt-DM { background: #fff4d6; color: #92400e; }
+.tt-DC { background: #dcf5e6; color: #166534; }
+.tt-EN { background: #fde2e2; color: #991b1b; }
+.tt-sep { font-size: 10px; color: var(--gris); padding: 6px 8px 2px; text-transform: uppercase; letter-spacing: .4px; }
+.banco-tt-select { border: 1px solid var(--verde-borde); border-radius: 5px; font-size: 11px; padding: 2px 4px; font-family: inherit; background: white; color: var(--negro); max-width: 120px; flex-shrink: 0; }
+.banco-tt-filtro { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; align-items: center; font-size: 11px; color: var(--gris); }
+.banco-tt-chip { border: 1px solid var(--verde-borde); background: white; border-radius: 12px; padding: 3px 9px; font-size: 11px; cursor: pointer; color: var(--negro); }
+.banco-tt-chip.active { background: var(--verde); color: white; border-color: var(--verde); }
 
 /* Modal detalle de ejercicio */
 #modal-detalle { z-index: 150; }
@@ -783,8 +794,87 @@ const TT_SEMANA = {
   4: ["Dinámica media","Dinámica media","Técnica","Dinámica corta","Enfrentamientos"]
 };
 
+// ─── ETIQUETAS DE T.T. ───────────────────────────────────────────────────────
+// Cada ejercicio de Técnicos / Espacio 1 / Cabina 1 / Cabina 2 puede tener una
+// etiqueta de T.T. Al generar, cada día usa los ejercicios con la etiqueta de su
+// T.T.; si no alcanzan, completa con los "sin etiqueta" (sirven para cualquier día).
+// La etiqueta sale de (1) lo elegido en el Banco o (2) el prefijo del nombre:
+//   "TC -" / "Técnica -" → Técnica · "DM -" → Dinámica media
+//   "DC -" → Dinámica corta · "EN -" / "Enf -" → Enfrentamientos
+const ETIQUETAS_TT = ["Técnica","Dinámica media","Dinámica corta","Enfrentamientos"];
+const ETIQ_CORTA = { "Técnica": "TC", "Dinámica media": "DM", "Dinámica corta": "DC", "Enfrentamientos": "EN" };
+const BANCOS_CON_ETIQUETA = new Set(["Técnicos","Espacio 1","Cabina 1","Cabina 2"]);
+const SIN_ETIQUETA = "Ninguna";
+
+function _etiquetasManual() {
+  try { return JSON.parse(localStorage.getItem("hv_etiquetas_tt") || "{}"); } catch { return {}; }
+}
+
+function _etiquetaPorPrefijo(nombre) {
+  const n = String(nombre || "").trim().normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  if (/^(tc|tecnica)\s*[-–—:]/.test(n)) return "Técnica";
+  if (/^dm\s*[-–—:]/.test(n)) return "Dinámica media";
+  if (/^dc\s*[-–—:]/.test(n)) return "Dinámica corta";
+  if (/^(en|enf|enfrentamientos?)\s*[-–—:]/.test(n)) return "Enfrentamientos";
+  return null;
+}
+
+function getEtiquetaTT(nombre, manual) {
+  const m = (manual || _etiquetasManual())[nombre];
+  if (m === SIN_ETIQUETA) return null;
+  if (m && ETIQUETAS_TT.includes(m)) return m;
+  return _etiquetaPorPrefijo(nombre);
+}
+
+function setEtiquetaTT(nombre, etiqueta) {
+  const manual = _etiquetasManual();
+  const porPrefijo = _etiquetaPorPrefijo(nombre);
+  const elegida = etiqueta || null;
+  if (elegida === porPrefijo) delete manual[nombre];          // coincide con el prefijo: no hace falta guardarla
+  else manual[nombre] = elegida || SIN_ETIQUETA;
+  localStorage.setItem("hv_etiquetas_tt", JSON.stringify(manual));
+}
+
+function ttBadgeHTML(nombre, manual) {
+  const tt = getEtiquetaTT(nombre, manual);
+  if (!tt) return "";
+  const c = ETIQ_CORTA[tt];
+  return `<span class="tt-badge tt-${c}" title="${tt}">${c}</span>`;
+}
+
+// Elige n ejercicios para un día según su T.T.:
+// 1) los etiquetados con ese T.T.  2) los sin etiqueta  3) cualquiera (último recurso).
+// "evitar" = ejercicios ya usados en la semana (para variar), se respeta mientras alcance.
+function pickPorTT(banco, n, diaIdx, categoria, tt, evitar = []) {
+  const manual = _etiquetasManual();
+  const conTag = banco.filter(e => getEtiquetaTT(e, manual) === tt);
+  const libres = banco.filter(e => !getEtiquetaTT(e, manual));
+  const sel = [];
+  // Orden de preferencia: etiquetados nuevos en la semana → etiquetados repetidos →
+  // sin etiqueta nuevos → sin etiqueta repetidos → cualquiera
+  const tandas = [
+    conTag.filter(e => !evitar.includes(e)), conTag,
+    libres.filter(e => !evitar.includes(e)), libres,
+  ];
+  for (const tanda of tandas) {
+    if (sel.length >= n) break;
+    const disp = tanda.filter(e => !sel.includes(e));
+    sel.push(...pickSinRepetir(disp, Math.min(n - sel.length, disp.length), diaIdx, categoria));
+  }
+  if (sel.length < n) sel.push(...rnd(banco.filter(e => !sel.includes(e)), n - sel.length));
+  return sel;
+}
+
+// Ordena un banco para el buscador: primero los del T.T. del día, después los
+// sin etiqueta, al final los de otros T.T. Devuelve [{nombre, grupo}].
+function ordenarPorTT(banco, tt) {
+  const manual = _etiquetasManual();
+  const rango = e => { const t = getEtiquetaTT(e, manual); return t === tt ? 0 : (!t ? 1 : 2); };
+  return banco.map(e => ({ nombre: e, grupo: rango(e) })).sort((a, b) => a.grupo - b.grupo);
+}
+
 // ─── CONSTANTES UI ───────────────────────────────────────────────────────────
-const DIAS = ["Lunes","Martes","Miércoles","Jueves","Viernes"];
+const DIAS =["Lunes","Martes","Miércoles","Jueves","Viernes"];
 const LABELS_FILA = ["Grupo","T.T.","Mood","Físico 1","Físico 2","Físico 3","Físico 4","Técnico 1","Técnico 2","Espacio 1","Cabina 1","Cabina 2"];
 const FILAS_AUTO = new Set(["Grupo","T.T.","Mood"]);
 
@@ -962,8 +1052,8 @@ function generarFilas() {
   const f1=[], f2=[], f3=[], f4=[];
   const t1=[], t2=[], e1=[], c1=[], c2=[];
 
-  // Espacio 1: únicos en la semana Y sin repetir lo de las últimas 3 semanas
-  const espUsadosSemana = [];
+  // Lo ya usado en la semana, para que días con el mismo T.T. no repitan
+  const usadosSemana = { "Técnicos": [], "Espacio 1": [], "Cabina 1": [], "Cabina 2": [] };
 
   for (let i = 0; i < 5; i++) {
     // Físicos: 4 únicos del grupo del día, evitando lo usado ese día de la
@@ -971,21 +1061,23 @@ function generarFilas() {
     const fis = pickSinRepetir(getBancoEfectivo(grupos[i]), 4, i, grupos[i]);
     f1.push(fis[0]||""); f2.push(fis[1]||""); f3.push(fis[2]||""); f4.push(fis[3]||"");
 
-    // Técnicos: 2 únicos por día, con memoria
-    const tec = pickSinRepetir(getBancoEfectivo("Técnicos"), 2, i, "Técnicos");
+    // Técnicos, Espacio 1 y Cabinas: según la etiqueta del T.T. del día
+    const tt = tts[i];
+    const tec = pickPorTT(getBancoEfectivo("Técnicos"), 2, i, "Técnicos", tt, usadosSemana["Técnicos"]);
     t1.push(tec[0]||""); t2.push(tec[1]||"");
 
-    // Espacio 1: con memoria + sin repetir dentro de la misma semana
-    const bancoEsp = getBancoEfectivo("Espacio 1").filter(e => !espUsadosSemana.includes(e));
-    const esp = pickSinRepetir(bancoEsp.length ? bancoEsp : getBancoEfectivo("Espacio 1"), 1, i, "Espacio 1");
-    espUsadosSemana.push(esp[0]);
+    const esp = pickPorTT(getBancoEfectivo("Espacio 1"), 1, i, "Espacio 1", tt, usadosSemana["Espacio 1"]);
     e1.push(esp[0]||"");
 
-    // Cabinas: 1 de cada banco, con memoria, sin repetir en el mismo día
-    const selCab1 = pickSinRepetir(getBancoEfectivo("Cabina 1"), 1, i, "Cabina 1");
-    const bancoCab2Sin = getBancoEfectivo("Cabina 2").filter(c => c !== (selCab1[0] || ""));
-    const selCab2 = pickSinRepetir(bancoCab2Sin.length ? bancoCab2Sin : getBancoEfectivo("Cabina 2"), 1, i, "Cabina 2");
+    const selCab1 = pickPorTT(getBancoEfectivo("Cabina 1"), 1, i, "Cabina 1", tt, usadosSemana["Cabina 1"]);
+    const bancoCab2 = getBancoEfectivo("Cabina 2").filter(c => c !== (selCab1[0] || ""));
+    const selCab2 = pickPorTT(bancoCab2.length ? bancoCab2 : getBancoEfectivo("Cabina 2"), 1, i, "Cabina 2", tt, usadosSemana["Cabina 2"]);
     c1.push(selCab1[0]||""); c2.push(selCab2[0]||"");
+
+    usadosSemana["Técnicos"].push(...tec);
+    usadosSemana["Espacio 1"].push(...esp);
+    usadosSemana["Cabina 1"].push(...selCab1);
+    usadosSemana["Cabina 2"].push(...selCab2);
   }
 
   return {
@@ -1062,6 +1154,8 @@ function editarCelda(td) {
   const fila  = td.dataset.fila;
   const dia   = parseInt(td.dataset.dia);
   const banco = getBancoParaFila(fila, dia);
+  const usaEtiqueta = fila.startsWith("Técnico") || fila === "Espacio 1" || fila.startsWith("Cabina");
+  _dropdownTT = usaEtiqueta ? (planActual?.filas?.["T.T."]?.[dia] || null) : null;
 
   _dropdownTd = td;
   const panel  = document.getElementById("ejercicio-dropdown");
@@ -1108,6 +1202,9 @@ function editarCelda(td) {
   };
 }
 
+// T.T. del día de la celda que se está editando (null si la fila no usa etiquetas)
+let _dropdownTT = null;
+
 function _renderDropdownList(banco, filtro) {
   const lista = document.getElementById("dropdown-list");
   const f = filtro.toLowerCase().trim();
@@ -1117,9 +1214,18 @@ function _renderDropdownList(banco, filtro) {
     return;
   }
   // data-nombre en vez de onclick para evitar conflicto de comillas en el atributo HTML
-  lista.innerHTML = filtered.map(e =>
-    `<div class="dropdown-item" data-nombre="${_attr(e)}">${e}</div>`
-  ).join("");
+  const manual = _etiquetasManual();
+  const item = e => `<div class="dropdown-item" data-nombre="${_attr(e)}">${ttBadgeHTML(e, manual)}${e}</div>`;
+  if (!_dropdownTT) { lista.innerHTML = filtered.map(item).join(""); return; }
+
+  // Agrupado: primero los del T.T. del día, después los sin etiqueta, después el resto
+  const titulos = [`Para ${_dropdownTT}`, "Sin etiqueta", "Otros T.T."];
+  let html = "", grupoActual = -1;
+  ordenarPorTT(filtered, _dropdownTT).forEach(({ nombre, grupo }) => {
+    if (grupo !== grupoActual) { html += `<div class="tt-sep">${titulos[grupo]}</div>`; grupoActual = grupo; }
+    html += item(nombre);
+  });
+  lista.innerHTML = html;
 }
 
 function _seleccionarEjercicio(nombre) {
@@ -1598,6 +1704,7 @@ function _renderBancoTabs() {
 
 function _cambiarBancoTab(key) {
   _bancoTabActual = key;
+  _bancoFiltroTT = "Todas";
   _renderBancoTabs();
   _renderBancoContenido(key);
 }
@@ -1605,15 +1712,40 @@ function _cambiarBancoTab(key) {
 // Escapa una cadena para usarla en atributos HTML
 function _attr(s) { return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;'); }
 
+let _bancoFiltroTT = "Todas";
+
+function _selectEtiquetaHTML(valor, extraAttrs = "") {
+  const corto = { "Técnica": "Técnica", "Dinámica media": "D. media", "Dinámica corta": "D. corta", "Enfrentamientos": "Enfrent." };
+  const opts = [["", "Sin etiqueta"], ...ETIQUETAS_TT.map(t => [t, `${ETIQ_CORTA[t]} · ${corto[t]}`])];
+  return `<select class="banco-tt-select" ${extraAttrs} title="Etiqueta de T.T.">` +
+    opts.map(([v, l]) => `<option value="${v}"${(valor || "") === v ? " selected" : ""}>${l}</option>`).join("") +
+    `</select>`;
+}
+
 function _renderBancoContenido(key) {
-  const banco = getBancoEfectivo(key);
-  let html = `<div class="banco-list" id="banco-list">`;
+  const conEtiqueta = BANCOS_CON_ETIQUETA.has(key);
+  const manual = _etiquetasManual();
+  let banco = getBancoEfectivo(key);
+  let html = "";
+
+  if (conEtiqueta) {
+    const chips = [["Todas", "Todas"], ...ETIQUETAS_TT.map(t => [t, ETIQ_CORTA[t]]), [SIN_ETIQUETA, "Sin etiqueta"]];
+    const cuenta = v => v === "Todas" ? banco.length
+      : banco.filter(e => (getEtiquetaTT(e, manual) || SIN_ETIQUETA) === v).length;
+    html += `<div class="banco-tt-filtro">Ver:` + chips.map(([v, l]) =>
+      `<button class="banco-tt-chip${_bancoFiltroTT === v ? " active" : ""}" data-filtro="${_attr(v)}">${l} (${cuenta(v)})</button>`
+    ).join("") + `</div>`;
+    if (_bancoFiltroTT !== "Todas") banco = banco.filter(e => (getEtiquetaTT(e, manual) || SIN_ETIQUETA) === _bancoFiltroTT);
+  }
+
+  html += `<div class="banco-list" id="banco-list">`;
   if (!banco.length) {
     html += `<div style="color:var(--gris);font-size:13px;padding:1rem 0;text-align:center;">No hay ejercicios en este banco.</div>`;
   } else {
     banco.forEach(e => {
       html += `<div class="banco-item" data-key="${_attr(key)}" data-nombre="${_attr(e)}">
-        <span class="banco-nombre">${e}</span>
+        <span class="banco-nombre">${conEtiqueta ? ttBadgeHTML(e, manual) : ""}${e}</span>
+        ${conEtiqueta ? _selectEtiquetaHTML(getEtiquetaTT(e, manual)) : ""}
         <div class="banco-item-btns">
           <button class="banco-edit-btn" title="Editar">✏️</button>
           <button class="banco-del-btn" title="Eliminar">🗑️</button>
@@ -1624,9 +1756,13 @@ function _renderBancoContenido(key) {
   html += `</div>
   <div class="banco-add-row">
     <input class="banco-add-input" id="banco-add-input" type="text" placeholder="Nombre del ejercicio nuevo...">
+    ${conEtiqueta ? _selectEtiquetaHTML(_bancoFiltroTT !== "Todas" && _bancoFiltroTT !== SIN_ETIQUETA ? _bancoFiltroTT : "", 'id="banco-add-tt"') : ""}
     <button class="banco-add-btn" id="banco-add-btn">Agregar</button>
   </div>`;
   document.getElementById("banco-contenido").innerHTML = html;
+
+  document.querySelectorAll("#banco-contenido .banco-tt-chip").forEach(b =>
+    b.addEventListener("click", () => { _bancoFiltroTT = b.dataset.filtro; _renderBancoContenido(key); }));
 
   // Event delegation para la lista
   const lista = document.getElementById("banco-list");
@@ -1638,7 +1774,14 @@ function _renderBancoContenido(key) {
       const itemNombre = item.dataset.nombre;
       if (ev.target.classList.contains("banco-del-btn"))  _eliminarEjercicio(itemKey, itemNombre);
       else if (ev.target.classList.contains("banco-edit-btn")) _editarEjercicio(item, itemKey, itemNombre);
-      else if (ev.target.classList.contains("banco-nombre"))   abrirDetalleEjercicio(itemNombre);
+      else if (ev.target.closest(".banco-nombre"))   abrirDetalleEjercicio(itemNombre);
+    });
+    lista.addEventListener("change", ev => {
+      if (!ev.target.classList.contains("banco-tt-select")) return;
+      const item = ev.target.closest(".banco-item");
+      setEtiquetaTT(item.dataset.nombre, ev.target.value);
+      toast(ev.target.value ? `✓ Etiqueta: ${ev.target.value}` : "✓ Sin etiqueta (sirve para cualquier día)");
+      _renderBancoContenido(key);
     });
   }
 
@@ -1680,6 +1823,8 @@ function _agregarEjercicio(key) {
   const extra = JSON.parse(localStorage.getItem("hv_banco_extra") || "{}");
   if (!extra[key]) extra[key] = [];
   if (!extra[key].includes(nombre)) { extra[key].push(nombre); localStorage.setItem("hv_banco_extra", JSON.stringify(extra)); }
+  const selTT = document.getElementById("banco-add-tt");
+  if (selTT && (selTT.value || _etiquetaPorPrefijo(nombre))) setEtiquetaTT(nombre, selTT.value || _etiquetaPorPrefijo(nombre));
   inp.value = "";
   _renderBancoContenido(key);
   toast(`✓ "${nombre}" agregado a ${key}`);
@@ -1708,13 +1853,7 @@ function _editarEjercicio(item, key, nombreViejo) {
 }
 
 function _cancelarEdicion(item, key, nombreViejo) {
-  item.dataset.nombre = nombreViejo;
-  item.innerHTML = `
-    <span class="banco-nombre">${nombreViejo}</span>
-    <div class="banco-item-btns">
-      <button class="banco-edit-btn" title="Editar">✏️</button>
-      <button class="banco-del-btn" title="Eliminar">🗑️</button>
-    </div>`;
+  _renderBancoContenido(key);
 }
 
 function _confirmarEdicion(key, nombreViejo, nuevoNombre) {
@@ -1733,6 +1872,12 @@ function _confirmarEdicion(key, nombreViejo, nuevoNombre) {
     extra[key] = (extra[key] || []).map(e => e === nombreViejo ? nuevoNombre : e);
   }
   localStorage.setItem("hv_banco_extra", JSON.stringify(extra));
+  // Migrar la etiqueta de T.T.: si el nombre nuevo trae prefijo (TC -, DM -...), manda el prefijo;
+  // si no, conserva la etiqueta que tenía
+  const etiqVieja = getEtiquetaTT(nombreViejo);
+  const manualTT = _etiquetasManual();
+  if (manualTT[nombreViejo] !== undefined) { delete manualTT[nombreViejo]; localStorage.setItem("hv_etiquetas_tt", JSON.stringify(manualTT)); }
+  if (!_etiquetaPorPrefijo(nuevoNombre) && etiqVieja) setEtiquetaTT(nuevoNombre, etiqVieja);
   // Migrar detalle al nuevo nombre si existe
   const detalles = JSON.parse(localStorage.getItem("hv_ejercicio_detalle") || "{}");
   if (detalles[nombreViejo]) { detalles[nuevoNombre] = detalles[nombreViejo]; delete detalles[nombreViejo]; localStorage.setItem("hv_ejercicio_detalle", JSON.stringify(detalles)); }
@@ -1827,7 +1972,7 @@ document.addEventListener("keydown", e => {
 // El estado compartido (planes, intenciones, banco, memoria) vive en el
 // servidor. Al abrir, se descarga y pisa lo local; cada cambio local se sube
 // automáticamente. Si no hay conexión, la app sigue funcionando local.
-const CLAVES_SYNC = ["hv_planes","hv_intenciones","hv_hist_dia","hv_banco_extra","hv_banco_eliminados","hv_ejercicio_detalle","hv_config_filas","hv_notas_fase"];
+const CLAVES_SYNC = ["hv_planes","hv_intenciones","hv_hist_dia","hv_banco_extra","hv_banco_eliminados","hv_ejercicio_detalle","hv_config_filas","hv_notas_fase","hv_etiquetas_tt"];
 const _lsSetNativo = Storage.prototype.setItem.bind(localStorage);
 const _syncTimers = {};
 
